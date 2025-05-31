@@ -1,20 +1,16 @@
+import { View, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+
+import './global.css'; // NativeWind tailwind config
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>GROUP 5 front end start!</Text>
+    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
+      <Text className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+        Welcome to NativeWind + Expo!
+      </Text>
+
       <StatusBar style="auto" />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
