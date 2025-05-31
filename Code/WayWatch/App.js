@@ -1,16 +1,22 @@
-import { View, Text } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import SplashScreen from './src/screens/SplashScreen';
+import CarouselScreen from './src/screens/CarouselScreen';
+import SignUpScreen from './src/screens/SignUpScreen';
 
-import './global.css'; // NativeWind tailwind config
+const Stack = createStackNavigator();
 
-export default function App() {
+const App = () => {
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
-        Welcome to NativeWind + Expo!
-      </Text>
-
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator initialRouteName="Splash">
+        <Stack.Screen name="Splash" component={SplashScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Carousel" component={CarouselScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="SignUp" component={SignUpScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
-}
+};
+
+export default App;
