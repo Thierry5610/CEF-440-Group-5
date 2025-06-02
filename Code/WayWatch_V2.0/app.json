@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "WayWatch",
-    "slug": "WayWatch",
+    "name": "WayWatch_V2.0",
+    "slug": "WayWatch_V2.0",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#68B5DE"
     },
     "ios": {
       "supportsTablet": true
@@ -23,8 +23,7 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "favicon": "./assets/favicon.png"
     }
   }
 }
