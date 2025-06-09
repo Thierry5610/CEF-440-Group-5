@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Mail, Lock, Info, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import { Mail, Lock, Info, Eye, EyeOff, ArrowLeft, LucideChevronLeft } from 'lucide-react-native';
 import { ButtonPrimary } from '../Components/ui/Button';
 
 const SignIn = ({navigation}) => {
@@ -39,7 +39,7 @@ const SignIn = ({navigation}) => {
        
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <ArrowLeft color="#000000" size={24} />
+            <LucideChevronLeft/>
           </TouchableOpacity>
         </View>
 
@@ -153,9 +153,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F8F8F8',
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F1F1F1",
     paddingHorizontal: 16,
-    height: 50,
+    height: 56,
   },
   inputIcon: {
     width: 20,

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ButtonPrimary } from '../Components/ui/Button';
+import { LucideChevronLeft } from 'lucide-react-native';
 
 const OTPVerification = ({navigation}) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -54,9 +55,7 @@ const OTPVerification = ({navigation}) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <View style={styles.backButtonContainer}>
-            <Text style={styles.backIcon}>←</Text>
-          </View>
+          <LucideChevronLeft/>
         </TouchableOpacity>
         <Text style={styles.title}>OTP Verification</Text>
         <View style={styles.placeholder} />
@@ -126,11 +125,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backIcon: {
-    fontSize: 18,
-    color: 'black',
-    fontWeight: '600',
-  },
   title: {
     fontSize: 18,
     fontWeight: '600',
@@ -163,6 +157,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F8F8',
     borderRadius: 8,
     fontSize: 18,
+    borderWidth: 1,
+    borderColor: "#F1F1F1",
     fontWeight: '600',
     color: '#000000',
     textAlign: 'center',

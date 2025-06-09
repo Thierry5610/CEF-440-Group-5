@@ -1,4 +1,3 @@
-// MapComponent.js
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -13,23 +12,24 @@ import {
   Dimensions,
   Platform,
   SafeAreaView,
-  ScrollView
+  ScrollView,
+  StatusBar,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
 const Maps = () => {
-  // State management
+  // State management (unchanged)
   const [region, setRegion] = useState({
     latitude: 37.78825,
     longitude: -122.4324,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  
   const [currentLocation, setCurrentLocation] = useState(null);
   const [destination, setDestination] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,13 +41,14 @@ const Maps = () => {
   const [showRouteOptions, setShowRouteOptions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [tripCompleted, setTripCompleted] = useState(false);
-  const [navigationPhase, setNavigationPhase] = useState('search'); // 'search', 'route-selection', 'navigating', 'completed'
+  const [navigationPhase, setNavigationPhase] = useState('search');
   const [showingAlternateRoutes, setShowingAlternateRoutes] = useState(false);
-  
+
   const mapRef = useRef(null);
   const [searchTimeout, setSearchTimeout] = useState(null);
+  const insets = useSafeAreaInsets();
 
-  // Get user's current location
+  // Get user's current location (unchanged)
   useEffect(() => {
     getCurrentLocation();
   }, []);
@@ -65,7 +66,7 @@ const Maps = () => {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
-      
+
       setCurrentLocation(userLocation);
       setRegion({
         ...userLocation,
@@ -78,20 +79,19 @@ const Maps = () => {
     }
   };
 
-  // Debounced search to prevent too many requests
+  // Debounced search and other functions (unchanged)
   const debouncedSearch = (query) => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
     }
-    
+
     const timeout = setTimeout(() => {
       searchPlaces(query);
     }, 800);
-    
+
     setSearchTimeout(timeout);
   };
 
-  // Search for places with better error handling and fallback
   const searchPlaces = async (query) => {
     if (query.length < 3) {
       setSearchResults([]);
@@ -100,7 +100,7 @@ const Maps = () => {
 
     try {
       setLoading(true);
-      
+
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=&dedupe=1`,
         {
@@ -123,32 +123,31 @@ const Maps = () => {
       }
 
       const data = await response.json();
-      
+
       if (!Array.isArray(data)) {
         throw new Error('Invalid response format');
       }
-      
-      const results = data.map(item => ({
-        id: item.place_id || Math.random().toString(),
-        name: item.display_name || 'Unknown location',
-        shortName: item.display_name ? item.display_name.split(',')[0] : 'Unknown location',
-        latitude: parseFloat(item.lat),
-        longitude: parseFloat(item.lon),
-      })).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude));
-      
+
+      const results = data
+        .map((item) => ({
+          id: item.place_id || Math.random().toString(),
+          name: item.display_name || 'Unknown location',
+          shortName: item.display_name ? item.display_name.split(',')[0] : 'Unknown location',
+          latitude: parseFloat(item.lat),
+          longitude: parseFloat(item.lon),
+        }))
+        .filter((item) => !isNaN(item.latitude) && !isNaN(item.longitude));
+
       setSearchResults(results);
       setShowSearchResults(true);
     } catch (error) {
       console.error('Search error:', error);
-      
+
       try {
         await fallbackSearch(query);
       } catch (fallbackError) {
         console.error('Fallback search failed:', fallbackError);
-        Alert.alert(
-          'Search Error', 
-          'Unable to search locations. Please check your internet connection and try again.'
-        );
+        Alert.alert('Search Error', 'Unable to search locations. Please check your internet connection and try again.');
         setSearchResults([]);
         setShowSearchResults(false);
       }
@@ -157,89 +156,81 @@ const Maps = () => {
     }
   };
 
-  // Fallback search using Photon API
   const fallbackSearch = async (query) => {
-    const response = await fetch(
-      `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`,
-      {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'WayWatch_V2.0/1.0.0',
-          'Accept': 'application/json',
-        },
-      }
-    );
+    const response = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'WayWatch_V2.0/1.0.0',
+        'Accept': 'application/json',
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`Fallback HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    
+
     if (!data.features || !Array.isArray(data.features)) {
       throw new Error('Invalid fallback response format');
     }
 
-    const results = data.features.map(item => ({
-      id: item.properties.osm_id || Math.random().toString(),
-      name: item.properties.name || item.properties.street || 'Unknown location',
-      shortName: item.properties.name || item.properties.street || 'Unknown location',
-      latitude: item.geometry.coordinates[1],
-      longitude: item.geometry.coordinates[0],
-    })).filter(item => !isNaN(item.latitude) && !isNaN(item.longitude));
+    const results = data.features
+      .map((item) => ({
+        id: item.properties.osm_id || Math.random().toString(),
+        name: item.properties.name || item.properties.street || 'Unknown location',
+        shortName: item.properties.name || item.properties.street || 'Unknown location',
+        latitude: item.geometry.coordinates[1],
+        longitude: item.geometry.coordinates[0],
+      }))
+      .filter((item) => !isNaN(item.latitude) && !isNaN(item.longitude));
 
     setSearchResults(results);
     setShowSearchResults(true);
   };
 
-  // Get multiple routes with traffic simulation
   const getMultipleRoutes = async (start, end) => {
     try {
       setLoading(true);
-      
-      // Get main route
+
       const mainResponse = await fetch(
         `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson&alternatives=true&steps=true`
       );
-      
+
       const mainData = await mainResponse.json();
-      
+
       if (mainData.routes && mainData.routes.length > 0) {
         const processedRoutes = mainData.routes.slice(0, 3).map((route, index) => {
-          const coordinates = route.geometry.coordinates.map(coord => ({
+          const coordinates = route.geometry.coordinates.map((coord) => ({
             latitude: coord[1],
             longitude: coord[0],
           }));
-          
-          // Simulate traffic conditions - make the first route (index 0) the best/default
+
           const baseTime = route.duration;
           let trafficMultiplier, trafficCondition, routeType, color, isFastest;
-          
+
           if (index === 0) {
-            // Default/Best route
             trafficMultiplier = 1.0;
             trafficCondition = 'clear';
             routeType = 'Best Route';
             color = '#007AFF';
             isFastest = true;
           } else if (index === 1) {
-            // Alternative with moderate traffic
             trafficMultiplier = 1.2;
             trafficCondition = 'light';
             routeType = 'Alternative';
             color = '#FF9500';
             isFastest = false;
           } else {
-            // Third alternative with heavy traffic
             trafficMultiplier = 1.4;
             trafficCondition = 'heavy';
             routeType = 'Scenic Route';
             color = '#34C759';
             isFastest = false;
           }
-          
+
           const trafficTime = baseTime * trafficMultiplier;
-          
+
           return {
             id: index,
             coordinates,
@@ -250,24 +241,21 @@ const Maps = () => {
             routeType,
             color,
             isFastest,
-            tollFree: index !== 1, // Middle route has tolls
+            tollFree: index !== 1,
           };
         });
-        
-        // Sort routes by time (best first)
+
         processedRoutes.sort((a, b) => a.durationWithTraffic - b.durationWithTraffic);
-        
-        // Update the best route indicator
+
         processedRoutes[0].isFastest = true;
         processedRoutes[0].routeType = 'Best Route';
-        
+
         setRoutes(processedRoutes);
-        setSelectedRoute(0); // Select the best route by default
+        setSelectedRoute(0);
         setShowRouteOptions(true);
         setNavigationPhase('route-selection');
         setShowingAlternateRoutes(false);
-        
-        // Fit map to show routes
+
         if (mapRef.current && processedRoutes.length > 0) {
           const allCoords = processedRoutes[0].coordinates;
           mapRef.current.fitToCoordinates(allCoords, {
@@ -284,15 +272,13 @@ const Maps = () => {
     }
   };
 
-  // Handle search result selection
   const selectSearchResult = (result) => {
     setDestination(result);
     setSearchQuery(result.shortName);
     setShowSearchResults(false);
     setSearchResults([]);
     setNavigationPhase('search');
-    
-    // Center map on selected location
+
     setRegion({
       latitude: result.latitude,
       longitude: result.longitude,
@@ -301,7 +287,6 @@ const Maps = () => {
     });
   };
 
-  // Start route planning
   const startRoutePlanning = async () => {
     if (!currentLocation || !destination) {
       Alert.alert('Error', 'Please select a destination');
@@ -311,26 +296,22 @@ const Maps = () => {
     await getMultipleRoutes(currentLocation, destination);
   };
 
-  // Handle alternate routes button
   const handleAlternateRoutes = () => {
     setShowingAlternateRoutes(!showingAlternateRoutes);
   };
 
-  // Start navigation with selected route
   const startNavigation = () => {
     setIsNavigating(true);
     setShowRouteOptions(false);
     setNavigationPhase('navigating');
   };
 
-  // Complete trip
   const completeTrip = () => {
     setIsNavigating(false);
     setTripCompleted(true);
     setNavigationPhase('completed');
   };
 
-  // Reset to search
   const resetToSearch = () => {
     setDestination(null);
     setSearchQuery('');
@@ -343,7 +324,6 @@ const Maps = () => {
     setShowingAlternateRoutes(false);
   };
 
-  // Center map on user location
   const centerOnUser = () => {
     if (currentLocation && mapRef.current) {
       mapRef.current.animateToRegion({
@@ -356,7 +336,6 @@ const Maps = () => {
     }
   };
 
-  // Route option component
   const RouteOption = ({ route, isSelected, onSelect }) => (
     <TouchableOpacity
       style={[styles.routeOption, isSelected && styles.selectedRouteOption]}
@@ -370,42 +349,49 @@ const Maps = () => {
         </View>
         <Text style={styles.routeTime}>{route.durationWithTraffic} min</Text>
       </View>
-      
+
       <View style={styles.routeDetails}>
         <Text style={styles.routeDistance}>{route.distance} km</Text>
         <View style={styles.routeFeatures}>
           {route.tollFree && <Text style={styles.featureBadge}>Toll-free</Text>}
-          <View style={[styles.trafficIndicator, 
-            { backgroundColor: route.traffic === 'clear' ? '#34C759' : 
-                              route.traffic === 'light' ? '#FF9500' : '#FF3B30' }
-          ]}>
+          <View
+            style={[
+              styles.trafficIndicator,
+              {
+                backgroundColor:
+                  route.traffic === 'clear' ? '#34C759' : route.traffic === 'light' ? '#FF9500' : '#FF3B30',
+              },
+            ]}
+          >
             <Text style={styles.trafficText}>
-              {route.traffic === 'clear' ? 'Clear' : 
-               route.traffic === 'light' ? 'Light traffic' : 'Heavy traffic'}
+              {route.traffic === 'clear' ? 'Clear' : route.traffic === 'light' ? 'Light traffic' : 'Heavy traffic'}
             </Text>
           </View>
         </View>
       </View>
-      
+
       {route.duration !== route.durationWithTraffic && (
-        <Text style={styles.normalTime}>
-          {route.duration} min without traffic
-        </Text>
+        <Text style={styles.normalTime}>{route.duration} min without traffic</Text>
       )}
     </TouchableOpacity>
   );
 
-  // Get the routes to display based on whether showing alternates
   const getDisplayedRoutes = () => {
     if (showingAlternateRoutes || routes.length <= 1) {
       return routes;
     }
-    // Show only the selected/best route initially
     return routes.filter((route, index) => index === 0);
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Status Bar Configuration */}
+      <StatusBar
+        barStyle={navigationPhase === 'navigating' ? 'dark-content' : 'light-content'}
+        backgroundColor={navigationPhase === 'navigating' ? '#FFFFFF' : 'transparent'}
+        translucent={true}
+      />
+
       {/* Map */}
       <MapView
         ref={mapRef}
@@ -417,33 +403,22 @@ const Maps = () => {
         showsMyLocationButton={false}
         showsTraffic={isNavigating}
       >
-        {/* Current location marker */}
         {currentLocation && (
-          <Marker
-            coordinate={currentLocation}
-            title="Your Location"
-            anchor={{ x: 0.5, y: 0.5 }}
-          >
+          <Marker coordinate={currentLocation} title="Your Location" anchor={{ x: 0.5, y: 0.5 }}>
             <View style={styles.currentLocationMarker}>
               <View style={styles.currentLocationDot} />
             </View>
           </Marker>
         )}
-        
-        {/* Destination marker */}
+
         {destination && (
-          <Marker
-            coordinate={destination}
-            title="Destination"
-            description={destination.name}
-          >
+          <Marker coordinate={destination} title="Destination" description={destination.name}>
             <View style={styles.destinationMarker}>
               <Ionicons name="location" size={30} color="#FF3B30" />
             </View>
           </Marker>
         )}
-        
-        {/* Route polylines */}
+
         {(showingAlternateRoutes ? routes : routes.filter((_, index) => index === selectedRoute)).map((route) => (
           <Polyline
             key={route.id}
@@ -458,7 +433,7 @@ const Maps = () => {
 
       {/* Search Interface */}
       {navigationPhase === 'search' && (
-        <View style={styles.searchContainer}>
+        <SafeAreaView style={[styles.searchContainer, { paddingTop: insets.top }]}>
           <Text style={styles.screenTitle}>Search Location</Text>
           <View style={styles.searchBar}>
             <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
@@ -490,7 +465,6 @@ const Maps = () => {
             )}
           </View>
 
-          {/* Search results */}
           {showSearchResults && (
             <View style={styles.searchResultsContainer}>
               {loading ? (
@@ -500,10 +474,7 @@ const Maps = () => {
                   data={searchResults}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.searchResultItem}
-                      onPress={() => selectSearchResult(item)}
-                    >
+                    <TouchableOpacity style={styles.searchResultItem} onPress={() => selectSearchResult(item)}>
                       <MaterialIcons name="place" size={20} color="#666" />
                       <View style={styles.searchResultTextContainer}>
                         <Text style={styles.searchResultTitle}>{item.shortName}</Text>
@@ -519,7 +490,6 @@ const Maps = () => {
             </View>
           )}
 
-          {/* Current location and start trip buttons */}
           <View style={styles.actionButtonsContainer}>
             <TouchableOpacity style={styles.currentLocationButton} onPress={centerOnUser}>
               <Ionicons name="locate" size={20} color="#007AFF" />
@@ -532,18 +502,20 @@ const Maps = () => {
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </SafeAreaView>
       )}
 
       {/* Route Selection Interface */}
       {navigationPhase === 'route-selection' && (
-        <View style={styles.routeSelectionContainer}>
-          <View style={styles.routeSelectionHeader}>
-            <TouchableOpacity onPress={resetToSearch} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#007AFF" />
-            </TouchableOpacity>
-            <Text style={styles.screenTitle}>Choose Your Route</Text>
-          </View>
+        <View style={[styles.routeSelectionContainer, { paddingBottom: insets.bottom }]}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.routeSelectionHeader}>
+              <TouchableOpacity onPress={resetToSearch} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#007AFF" />
+              </TouchableOpacity>
+              <Text style={styles.screenTitle}>Choose Your Route</Text>
+            </View>
+          </SafeAreaView>
 
           <ScrollView style={styles.routesList} showsVerticalScrollIndicator={false}>
             {getDisplayedRoutes().map((route) => (
@@ -562,11 +534,13 @@ const Maps = () => {
             </TouchableOpacity>
 
             {routes.length > 1 && (
-              <TouchableOpacity 
-                style={[styles.alternateRouteButton, showingAlternateRoutes && styles.alternateRouteButtonActive]} 
+              <TouchableOpacity
+                style={[styles.alternateRouteButton, showingAlternateRoutes && styles.alternateRouteButtonActive]}
                 onPress={handleAlternateRoutes}
               >
-                <Text style={[styles.alternateRouteButtonText, showingAlternateRoutes && styles.alternateRouteButtonTextActive]}>
+                <Text
+                  style={[styles.alternateRouteButtonText, showingAlternateRoutes && styles.alternateRouteButtonTextActive]}
+                >
                   {showingAlternateRoutes ? 'Hide Alternatives' : 'Show Alternate Routes'}
                 </Text>
               </TouchableOpacity>
@@ -577,65 +551,57 @@ const Maps = () => {
 
       {/* Navigation Interface */}
       {navigationPhase === 'navigating' && (
-        <View style={styles.navigationContainer}>
+        <SafeAreaView style={[styles.navigationContainer, { paddingTop: insets.top }]}>
           <View style={styles.navigationHeader}>
             <View style={styles.navigationInfo}>
-              <Text style={styles.navigationTime}>
-                {routes[selectedRoute]?.durationWithTraffic} min
-              </Text>
-              <Text style={styles.navigationDistance}>
-                {routes[selectedRoute]?.distance} km
-              </Text>
+              <Text style={styles.navigationTime}>{routes[selectedRoute]?.durationWithTraffic} min</Text>
+              <Text style={styles.navigationDistance}>{routes[selectedRoute]?.distance} km</Text>
             </View>
             <TouchableOpacity onPress={completeTrip} style={styles.endTripButton}>
               <Text style={styles.endTripButtonText}>End Trip</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </SafeAreaView>
       )}
 
       {/* Trip Completion Interface */}
       {navigationPhase === 'completed' && (
-        <View style={styles.completionContainer}>
-          <View style={styles.completionContent}>
-            <View style={styles.completionIcon}>
-              <Ionicons name="checkmark-circle" size={60} color="#34C759" />
-            </View>
-            <Text style={styles.completionTitle}>Trip Completed!</Text>
-            <Text style={styles.completionSubtitle}>
-              You have arrived at your destination
-            </Text>
-            
-            <View style={styles.tripSummary}>
-              <Text style={styles.tripSummaryText}>
-                Distance: {routes[selectedRoute]?.distance} km
-              </Text>
-              <Text style={styles.tripSummaryText}>
-                Time: {routes[selectedRoute]?.durationWithTraffic} min
-              </Text>
-            </View>
+        <View style={[styles.completionContainer, { paddingBottom: insets.bottom }]}>
+          <SafeAreaView edges={['top']}>
+            <View style={styles.completionContent}>
+              <View style={styles.completionIcon}>
+                <Ionicons name="checkmark-circle" size={60} color="#34C759" />
+              </View>
+              <Text style={styles.completionTitle}>Trip Completed!</Text>
+              <Text style={styles.completionSubtitle}>You have arrived at your destination</Text>
 
-            <TouchableOpacity style={styles.doneButton} onPress={resetToSearch}>
-              <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.tripSummary}>
+                <Text style={styles.tripSummaryText}>Distance: {routes[selectedRoute]?.distance} km</Text>
+                <Text style={styles.tripSummaryText}>Time: {routes[selectedRoute]?.durationWithTraffic} min</Text>
+              </View>
+
+              <TouchableOpacity style={styles.doneButton} onPress={resetToSearch}>
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
         </View>
       )}
 
-      {/* Location button - positioned to avoid overlap */}
+      {/* Location Button */}
       {(navigationPhase === 'route-selection' || navigationPhase === 'search') && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.locationButton, 
-            navigationPhase === 'route-selection' && styles.locationButtonRouteSelection
-          ]} 
+            styles.locationButton,
+            navigationPhase === 'route-selection' && styles.locationButtonRouteSelection,
+          ]}
           onPress={centerOnUser}
         >
           <Ionicons name="locate" size={24} color="#007AFF" />
         </TouchableOpacity>
       )}
 
-      {/* Loading overlay */}
+      {/* Loading Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#007AFF" />
@@ -653,8 +619,8 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  
-  // Markers
+
+  // Markers (unchanged)
   currentLocationMarker: {
     width: 20,
     height: 20,
@@ -681,7 +647,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'white',
-    paddingTop: Platform.OS === 'ios' ? 0 : 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 20,
@@ -702,10 +667,12 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: "#F1F1F1",
     borderRadius: 25,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
     marginBottom: 10,
   },
   searchIcon: {
@@ -758,7 +725,9 @@ const styles = StyleSheet.create({
   currentLocationButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f8f8f8',
+    borderWidth: 1,
+    borderColor: "#F1F1F1",
     padding: 15,
     borderRadius: 25,
   },
@@ -788,7 +757,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingTop: 20,
     maxHeight: height * 0.7,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -801,6 +769,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     marginBottom: 20,
+    paddingTop: 20,
   },
   backButton: {
     marginRight: 15,
@@ -899,7 +868,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 20,
     gap: 10,
-    },
+  },
   startNavigationButton: {
     backgroundColor: '#007AFF',
     padding: 15,
@@ -936,7 +905,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: 'white',
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 20,
     paddingHorizontal: 20,
     borderBottomLeftRadius: 15,
@@ -986,9 +954,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingTop: 30,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
@@ -997,6 +962,9 @@ const styles = StyleSheet.create({
   },
   completionContent: {
     alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 30,
+    paddingBottom: 40,
   },
   completionIcon: {
     marginBottom: 20,

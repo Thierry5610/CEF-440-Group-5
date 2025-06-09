@@ -13,11 +13,12 @@ import {
   StatusBar,
   Dimensions,
   ActivityIndicator,
-  Platform
+  Platform,
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, Plus } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -55,7 +56,7 @@ export default function Notifications() {
       date: '10/11/2025',
       actualTime: '11:00 PM',
       images: [getRandomImage('traffic')],
-      description: 'Heavy traffic congestion on main road causing significant delays for commuters.'
+      description: 'Heavy traffic congestion on main road causing significant delays for commuters.',
     },
     {
       id: 2,
@@ -68,7 +69,7 @@ export default function Notifications() {
       date: '10/11/2025',
       actualTime: '11:00 PM',
       images: [getRandomImage('accident'), getRandomImage('accident')],
-      description: 'Vehicle collision reported with minor injuries. Emergency services responded quickly.'
+      description: 'Vehicle collision reported with minor injuries. Emergency services responded quickly.',
     },
     {
       id: 3,
@@ -81,8 +82,8 @@ export default function Notifications() {
       date: '10/11/2025',
       actualTime: '11:00 PM',
       images: [getRandomImage('construction')],
-      description: 'Ongoing road maintenance work causing lane closures during peak hours.'
-    }
+      description: 'Ongoing road maintenance work causing lane closures during peak hours.',
+    },
   ]);
 
   const [selectedNotification, setSelectedNotification] = useState(null);
@@ -94,10 +95,12 @@ export default function Notifications() {
     description: '',
     location: '',
     hasInjuries: null,
-    images: []
+    images: [],
   });
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
+
+  const insets = useSafeAreaInsets();
 
   const incidentTypes = [
     { id: 'traffic', label: 'Traffic', icon: '🚗', color: '#007AFF' },
@@ -108,7 +111,7 @@ export default function Notifications() {
     { id: 'lane', label: 'Blocked Lane', icon: '🚫', color: '#FF6B35' },
     { id: 'breakdown', label: 'Map Issue', icon: '🗺️', color: '#5AC8FA' },
     { id: 'weather', label: 'Weather', icon: '🌧️', color: '#AF52DE' },
-    { id: 'other', label: 'Other', icon: '❓', color: '#8E8E93' }
+    { id: 'other', label: 'Other', icon: '❓', color: '#8E8E93' },
   ];
 
   const getCurrentLocation = async () => {
@@ -131,7 +134,7 @@ export default function Notifications() {
         const addr = address[0];
         const locationString = `${addr.street || ''} ${addr.city || ''}, ${addr.region || ''}`.trim();
         setCurrentLocation(locationString);
-        setNewReport(prev => ({ ...prev, location: locationString }));
+        setNewReport((prev) => ({ ...prev, location: locationString }));
       }
     } catch (error) {
       console.error('Error getting location:', error);
@@ -156,9 +159,9 @@ export default function Notifications() {
       });
 
       if (!result.canceled) {
-        setNewReport(prev => ({
+        setNewReport((prev) => ({
           ...prev,
-          images: [...prev.images, result.assets[0].uri]
+          images: [...prev.images, result.assets[0].uri],
         }));
       }
     } catch (error) {
@@ -176,7 +179,7 @@ export default function Notifications() {
   };
 
   const handleIncidentTypeSelect = (type) => {
-    setNewReport(prev => ({ ...prev, type }));
+    setNewReport((prev) => ({ ...prev, type }));
     setShowReportModal(false);
     setShowIncidentForm(true);
     getCurrentLocation();
@@ -195,7 +198,7 @@ export default function Notifications() {
   };
 
   const confirmSubmission = () => {
-    const selectedType = incidentTypes.find(t => t.id === newReport.type);
+    const selectedType = incidentTypes.find((t) => t.id === newReport.type);
     const newNotification = {
       id: Date.now(),
       type: newReport.type,
@@ -207,16 +210,16 @@ export default function Notifications() {
       date: new Date().toLocaleDateString(),
       actualTime: new Date().toLocaleTimeString(),
       images: newReport.images.length > 0 ? newReport.images : [getRandomImage(newReport.type)],
-      description: newReport.description
+      description: newReport.description,
     };
 
-    setNotifications(prev => [newNotification, ...prev]);
-    
+    setNotifications((prev) => [newNotification, ...prev]);
+
     setNewReport({ type: '', description: '', location: '', hasInjuries: null, images: [] });
     setShowConfirmModal(false);
     setShowIncidentForm(false);
     setSelectedNotification(null);
-    
+
     Alert.alert('Success', 'Your report has been submitted successfully!');
   };
 
@@ -229,12 +232,10 @@ export default function Notifications() {
   };
 
   const NotificationItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.notificationItem}
-      onPress={() => handleNotificationPress(item)}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.notificationIcon, { backgroundColor: incidentTypes.find(t => t.id === item.type)?.color + '20' || '#f0f0f0' }]}>
+    <TouchableOpacity style={styles.notificationItem} onPress={() => handleNotificationPress(item)} activeOpacity={0.7}>
+      <View
+        style={[styles.notificationIcon, { backgroundColor: incidentTypes.find((t) => t.id === item.type)?.color + '20' || '#f0f0f0' }]}
+      >
         <Text style={styles.iconText}>{item.icon}</Text>
       </View>
       <View style={styles.notificationContent}>
@@ -246,9 +247,9 @@ export default function Notifications() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: StatusBar.currentHeight || 0 }]}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
-      
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+
       {/* Main Notifications List */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
@@ -257,11 +258,7 @@ export default function Notifications() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.notificationsList}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <ScrollView style={styles.notificationsList} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {notifications.map((item) => (
           <NotificationItem key={item.id} item={item} />
         ))}
@@ -269,7 +266,7 @@ export default function Notifications() {
 
       {/* Notification Detail Modal */}
       <Modal visible={!!selectedNotification} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={[styles.modalContainer, { paddingTop: StatusBar.currentHeight || 0 }]}>
+        <SafeAreaView style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setSelectedNotification(null)} style={styles.backButtonContainer}>
               <ChevronLeft size={24} color="#007AFF" />
@@ -279,11 +276,7 @@ export default function Notifications() {
           </View>
 
           {selectedNotification && (
-            <ScrollView 
-              style={styles.modalContent}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.detailScrollContent}
-            >
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.detailScrollContent}>
               <View style={styles.detailCard}>
                 <View style={styles.detailItem}>
                   <View style={styles.detailIconContainer}>
@@ -336,7 +329,7 @@ export default function Notifications() {
 
       {/* Report Type Selection Modal */}
       <Modal visible={showReportModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={[styles.modalContainer, { paddingTop: StatusBar.currentHeight || 0 }]}>
+        <SafeAreaView style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowReportModal(false)} style={styles.backButtonContainer}>
               <ChevronLeft size={24} color="#007AFF" />
@@ -345,14 +338,10 @@ export default function Notifications() {
             <View style={styles.placeholder} />
           </View>
 
-          <ScrollView 
-            style={styles.incidentGrid}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.gridScrollContent}
-          >
+          <ScrollView style={styles.incidentGrid} showsVerticalScrollIndicator={false} contentContainerStyle={styles.gridScrollContent}>
             <Text style={styles.gridTitle}>What do you see?</Text>
             <Text style={styles.gridSubtitle}>Select the type of incident below</Text>
-            
+
             <View style={styles.grid}>
               {incidentTypes.map((type) => (
                 <TouchableOpacity
@@ -372,7 +361,7 @@ export default function Notifications() {
 
       {/* Incident Form Modal */}
       <Modal visible={showIncidentForm} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={[styles.modalContainer, { paddingTop: StatusBar.currentHeight || 0 }]}>
+        <SafeAreaView style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowIncidentForm(false)} style={styles.backButtonContainer}>
               <ChevronLeft size={24} color="#007AFF" />
@@ -381,13 +370,9 @@ export default function Notifications() {
             <View style={styles.placeholder} />
           </View>
 
-          <ScrollView 
-            style={styles.formContainer}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.formScrollContent}
-          >
+          <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false} contentContainerStyle={styles.formScrollContent}>
             <Text style={styles.formTitle}>Tell us what happened</Text>
-            
+
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Add Photos</Text>
               <TouchableOpacity style={styles.imageUpload} onPress={handleImagePick}>
@@ -411,16 +396,16 @@ export default function Notifications() {
               <View style={styles.injuryQuestion}>
                 <Text style={styles.questionText}>😟 Any Injuries?</Text>
                 <View style={styles.buttonGroup}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.optionButton, newReport.hasInjuries === true && styles.selectedButton]}
-                    onPress={() => setNewReport(prev => ({ ...prev, hasInjuries: true }))}
+                    onPress={() => setNewReport((prev) => ({ ...prev, hasInjuries: true }))}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.optionText, newReport.hasInjuries === true && styles.selectedText]}>YES</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.optionButton, newReport.hasInjuries === false && styles.selectedButton]}
-                    onPress={() => setNewReport(prev => ({ ...prev, hasInjuries: false }))}
+                    onPress={() => setNewReport((prev) => ({ ...prev, hasInjuries: false }))}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.optionText, newReport.hasInjuries === false && styles.selectedText]}>NO</Text>
@@ -437,7 +422,7 @@ export default function Notifications() {
                 numberOfLines={4}
                 placeholder="Describe what you see in detail..."
                 value={newReport.description}
-                onChangeText={(text) => setNewReport(prev => ({ ...prev, description: text }))}
+                onChangeText={(text) => setNewReport((prev) => ({ ...prev, description: text }))}
                 placeholderTextColor="#999"
               />
             </View>
@@ -445,11 +430,7 @@ export default function Notifications() {
             <View style={styles.section}>
               <View style={styles.locationContainer}>
                 <Text style={styles.inputLabel}>Location *</Text>
-                <TouchableOpacity 
-                  style={styles.locationButton} 
-                  onPress={getCurrentLocation}
-                  disabled={loadingLocation}
-                >
+                <TouchableOpacity style={styles.locationButton} onPress={getCurrentLocation} disabled={loadingLocation}>
                   {loadingLocation ? (
                     <ActivityIndicator size="small" color="#007AFF" />
                   ) : (
@@ -464,13 +445,13 @@ export default function Notifications() {
                 style={styles.textInput}
                 placeholder="Or enter location manually"
                 value={newReport.location}
-                onChangeText={(text) => setNewReport(prev => ({ ...prev, location: text }))}
+                onChangeText={(text) => setNewReport((prev) => ({ ...prev, location: text }))}
                 placeholderTextColor="#999"
               />
             </View>
 
-            <TouchableOpacity 
-              style={[styles.submitButton, (!newReport.description.trim() || !newReport.location.trim()) && styles.disabledButton]} 
+            <TouchableOpacity
+              style={[styles.submitButton, (!newReport.description.trim() || !newReport.location.trim()) && styles.disabledButton]}
               onPress={handleSubmitReport}
               disabled={!newReport.description.trim() || !newReport.location.trim()}
               activeOpacity={0.8}
@@ -488,18 +469,10 @@ export default function Notifications() {
             <Text style={styles.confirmTitle}>Confirm Report</Text>
             <Text style={styles.confirmText}>Do you want to submit this incident report?</Text>
             <View style={styles.confirmButtons}>
-              <TouchableOpacity 
-                style={styles.confirmButton}
-                onPress={confirmSubmission}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.confirmButton} onPress={confirmSubmission} activeOpacity={0.8}>
                 <Text style={styles.confirmButtonText}>Submit</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.cancelButton}
-                onPress={() => setShowConfirmModal(false)}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.cancelButton} onPress={() => setShowConfirmModal(false)} activeOpacity={0.8}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -526,7 +499,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e9ecef',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1a1a1a',
   },
@@ -538,7 +511,6 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-
   },
   notificationsList: {
     flex: 1,
@@ -599,14 +571,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16, // Updated for improved header
+    paddingVertical: 12, // Updated for improved header
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    borderBottomColor: '#E5E5EA', // Updated for improved header
+    backgroundColor: '#FFFFFF', // Updated for improved header
   },
   backButtonContainer: {
-    width: 44,
-    height: 44,
+    width: 40, // Updated for improved header
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -616,7 +589,7 @@ const styles = StyleSheet.create({
     color: '#1a1a1a',
   },
   placeholder: {
-    width: 44,
+    width: 40, // Updated for improved header
   },
   modalContent: {
     flex: 1,

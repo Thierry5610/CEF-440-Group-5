@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { User, Mail, Lock, Eye, EyeOff, Check } from 'lucide-react-native';
+import { User, Mail, Lock, Eye, EyeOff, Check, LucideChevronLeft } from 'lucide-react-native';
 
 const SignUp = ({navigation}) => {
   const [username, setUsername] = useState('');
@@ -34,7 +34,7 @@ const SignUp = ({navigation}) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <Text style={styles.backIcon}>‹</Text>
+          <LucideChevronLeft/>
         </TouchableOpacity>
         <Text style={styles.title}>Sign Up</Text>
         <View style={styles.placeholder} />
@@ -180,11 +180,6 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  backIcon: {
-    fontSize: 24,
-    color: '#000000',
-    fontWeight: '300',
   },
   title: {
     fontSize: 18,

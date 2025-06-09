@@ -8,10 +8,14 @@ import {
   ScrollView,
   Image,
   TextInput,
-  FlatList,
   Modal,
+  StatusBar,
+  Dimensions,
 } from 'react-native';
-import { Search, Heart, ArrowLeft, Bookmark } from 'lucide-react-native';
+import { Search, Heart, ChevronLeft, Bookmark, ArrowRight, BookOpen } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const { width } = Dimensions.get('window');
 
 // Sample data for learning items
 const learningData = [
@@ -22,6 +26,8 @@ const learningData = [
     subcategory: 'Regulatory',
     image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
     isFavorite: false,
+    difficulty: 'Beginner',
+    duration: '5 min read',
   },
   {
     id: '2',
@@ -30,6 +36,8 @@ const learningData = [
     subcategory: 'Warning',
     image: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=400&h=300&fit=crop',
     isFavorite: true,
+    difficulty: 'Beginner',
+    duration: '3 min read',
   },
   {
     id: '3',
@@ -38,6 +46,8 @@ const learningData = [
     subcategory: 'Speed',
     image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
     isFavorite: true,
+    difficulty: 'Intermediate',
+    duration: '8 min read',
   },
   {
     id: '4',
@@ -46,6 +56,8 @@ const learningData = [
     subcategory: 'General',
     image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
     isFavorite: false,
+    difficulty: 'Advanced',
+    duration: '12 min read',
   },
   {
     id: '5',
@@ -54,10 +66,21 @@ const learningData = [
     subcategory: 'General',
     image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=400&h=300&fit=crop',
     isFavorite: false,
+    difficulty: 'Intermediate',
+    duration: '6 min read',
   },
 ];
 
 const categories = ['All', 'Regulatory', 'Warning', 'Informational', 'Temporary', 'Prohibition'];
+
+const getDifficultyColor = (difficulty) => {
+  switch (difficulty) {
+    case 'Beginner': return '#4CAF50';
+    case 'Intermediate': return '#FF9800';
+    case 'Advanced': return '#F44336';
+    default: return '#4CAF50';
+  }
+};
 
 export default function Guide() {
   const [activeTab, setActiveTab] = useState('All');
@@ -68,6 +91,7 @@ export default function Guide() {
   );
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const insets = useSafeAreaInsets();
 
   const toggleFavorite = (itemId) => {
     setFavorites(prev => 
@@ -99,33 +123,68 @@ export default function Guide() {
     return matchesTab && matchesCategory && matchesSearch;
   });
 
-  const renderLearningItem = ({ item }) => (
+  // Group data by category
+  const roadSignsData = filteredData.filter(item => item.category === 'Road Signs');
+  const safeDrivingData = filteredData.filter(item => item.category === 'Safe Driving');
+
+  const renderLearningItem = (item) => (
     <TouchableOpacity 
+      key={item.id}
       style={styles.learningCard}
       onPress={() => openDetailModal(item)}
+      activeOpacity={0.95}
     >
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <TouchableOpacity 
-          style={styles.favoriteButton}
-          onPress={() => toggleFavorite(item.id)}
-        >
-          <Heart 
-            size={16} 
-            color={favorites.includes(item.id) ? '#007AFF' : '#8E8E93'}
-            fill={favorites.includes(item.id) ? '#007AFF' : 'none'}
-          />
-        </TouchableOpacity>
+      <View style={styles.cardImageContainer}>
+        <Image source={{ uri: item.image }} style={styles.cardImage} />
+        <View style={styles.imageOverlay}>
+          <TouchableOpacity 
+            style={styles.favoriteButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleFavorite(item.id);
+            }}
+          >
+            <Heart 
+              size={18} 
+              color={favorites.includes(item.id) ? '#FF3B30' : '#FFFFFF'}
+              fill={favorites.includes(item.id) ? '#FF3B30' : 'none'}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor(item.difficulty) }]}>
+          <Text style={styles.difficultyText}>{item.difficulty}</Text>
+        </View>
       </View>
-      <TouchableOpacity 
-        style={styles.moreButton}
-        onPress={() => openDetailModal(item)}
-      >
-        <Text style={styles.moreButtonText}>More</Text>
-      </TouchableOpacity>
+      
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+        <View style={styles.cardMeta}>
+          <View style={styles.metaItem}>
+            <BookOpen size={12} color="#8E8E93" />
+            <Text style={styles.metaText}>{item.duration}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.cardFooter}>
+          <Text style={styles.learnText}>Learn more</Text>
+          <ArrowRight size={16} color="#4A90E2" />
+        </View>
+      </View>
     </TouchableOpacity>
   );
+
+  const renderGrid = (data) => {
+    const rows = [];
+    for (let i = 0; i < data.length; i += 2) {
+      rows.push(
+        <View key={i} style={styles.row}>
+          {renderLearningItem(data[i])}
+          {data[i + 1] && renderLearningItem(data[i + 1])}
+        </View>
+      );
+    }
+    return rows;
+  };
 
   // Detail Modal Component
   const DetailModal = () => (
@@ -135,30 +194,48 @@ export default function Guide() {
       visible={isDetailModalVisible}
       onRequestClose={closeDetailModal}
     >
-      <SafeAreaView style={styles.modalContainer}>
+      <SafeAreaView style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
         <View style={styles.detailHeader}>
-          <TouchableOpacity onPress={closeDetailModal}>
-            <ArrowLeft size={24} color="#007AFF" />
+          <TouchableOpacity 
+            onPress={closeDetailModal} 
+            style={styles.backButton}
+            activeOpacity={0.8}
+          >
+            <ChevronLeft size={24} color="#4A90E2" />
           </TouchableOpacity>
-          <Text style={styles.detailTitle}>
+          <Text style={styles.detailTitle} numberOfLines={1}>
             {selectedItem?.title || 'Speed Management'}
           </Text>
-          <TouchableOpacity onPress={() => selectedItem && toggleFavorite(selectedItem.id)}>
+          <TouchableOpacity 
+            onPress={() => selectedItem && toggleFavorite(selectedItem.id)}
+            style={styles.bookmarkButton}
+          >
             <Bookmark 
               size={20} 
-              color={selectedItem && favorites.includes(selectedItem.id) ? '#007AFF' : '#8E8E93'}
-              fill={selectedItem && favorites.includes(selectedItem.id) ? '#007AFF' : 'none'}
+              color={selectedItem && favorites.includes(selectedItem.id) ? '#FF3B30' : '#8E8E93'}
+              fill={selectedItem && favorites.includes(selectedItem.id) ? '#FF3B30' : 'none'}
             />
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.detailContent}>
-          <Image 
-            source={{ 
-              uri: selectedItem?.image || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop' 
-            }} 
-            style={styles.detailImage} 
-          />
+        <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.detailImageContainer}>
+            <Image 
+              source={{ 
+                uri: selectedItem?.image || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop' 
+              }} 
+              style={styles.detailImage} 
+            />
+            <View style={styles.detailImageOverlay}>
+              <View style={[styles.detailDifficultyBadge, { backgroundColor: getDifficultyColor(selectedItem?.difficulty || 'Beginner') }]}>
+                <Text style={styles.detailDifficultyText}>{selectedItem?.difficulty || 'Beginner'}</Text>
+              </View>
+              <View style={styles.detailMetaContainer}>
+                <BookOpen size={14} color="#FFFFFF" />
+                <Text style={styles.detailMetaText}>{selectedItem?.duration || '5 min read'}</Text>
+              </View>
+            </View>
+          </View>
           
           <View style={styles.detailTextContainer}>
             <Text style={styles.detailQuestion}>
@@ -181,26 +258,32 @@ export default function Guide() {
             
             <View style={styles.benefitsContainer}>
               <View style={styles.benefitItem}>
-                <Image 
-                  source={{ uri: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=100&h=100&fit=crop' }} 
-                  style={styles.benefitIcon} 
-                />
+                <View style={styles.benefitIconContainer}>
+                  <Image 
+                    source={{ uri: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3' }} 
+                    style={styles.benefitIcon} 
+                  />
+                </View>
                 <Text style={styles.benefitText}>Reduce crashes and injuries</Text>
               </View>
               
               <View style={styles.benefitItem}>
-                <Image 
-                  source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop' }} 
-                  style={styles.benefitIcon} 
-                />
-                <Text style={styles.benefitText}>Create a calmer and more predictable</Text>
+                <View style={styles.benefitIconContainer}>
+                  <Image 
+                    source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' }} 
+                    style={styles.benefitIcon} 
+                  />
+                </View>
+                <Text style={styles.benefitText}>Create a calmer and more predictable environment</Text>
               </View>
               
               <View style={styles.benefitItem}>
-                <Image 
-                  source={{ uri: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=100&h=100&fit=crop' }} 
-                  style={styles.benefitIcon} 
-                />
+                <View style={styles.benefitIconContainer}>
+                  <Image 
+                    source={{ uri: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f' }} 
+                    style={styles.benefitIcon} 
+                  />
+                </View>
                 <Text style={styles.benefitText}>Make roads safer for walkers, bikers, and drivers</Text>
               </View>
             </View>
@@ -212,82 +295,102 @@ export default function Guide() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Learn</Text>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Search size={16} color="#8E8E93" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+      
+      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Learn</Text>
+          <Text style={styles.headerSubtitle}>Master road safety and driving skills</Text>
         </View>
-      </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'All' && styles.activeTab]}
-          onPress={() => setActiveTab('All')}
-        >
-          <Text style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'Favorite' && styles.activeTab]}
-          onPress={() => setActiveTab('Favorite')}
-        >
-          <Text style={[styles.tabText, activeTab === 'Favorite' && styles.activeTabText]}>
-            Favorite
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Search size={18} color="#8E8E93" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search topics..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#8E8E93"
+            />
+          </View>
+        </View>
 
-      {/* Category Filters */}
-      <View style={styles.categoryContainer}>
-        <Text style={styles.categoryTitle}>Road Signs</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-          {categories.map((category) => (
-            <TouchableOpacity
-              key={category}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category && styles.selectedCategoryButton
-              ]}
-              onPress={() => setSelectedCategory(category)}
-            >
-              <Text style={[
-                styles.categoryButtonText,
-                selectedCategory === category && styles.selectedCategoryButtonText
-              ]}>
-                {category}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'All' && styles.activeTab]}
+            onPress={() => setActiveTab('All')}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
+              All Topics
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'Favorite' && styles.activeTab]}
+            onPress={() => setActiveTab('Favorite')}
+            activeOpacity={0.8}
+          >
+            <Heart 
+              size={16} 
+              color={activeTab === 'Favorite' ? '#FFFFFF' : '#8E8E93'} 
+              fill={activeTab === 'Favorite' ? '#FFFFFF' : 'none'}
+              style={{ marginRight: 6 }}
+            />
+            <Text style={[styles.tabText, activeTab === 'Favorite' && styles.activeTabText]}>
+              Favorites
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Learning Items Grid */}
-      <FlatList
-        data={filteredData}
-        renderItem={renderLearningItem}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.gridContainer}
-        columnWrapperStyle={styles.row}
-        showsVerticalScrollIndicator={false}
-      />
+        {/* Category Filters */}
+        <View style={styles.categoryContainer}>
+          <Text style={styles.categoryTitle}>Road Signs</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+            {categories.map((category) => (
+              <TouchableOpacity
+                key={category}
+                style={[
+                  styles.categoryButton,
+                  selectedCategory === category && styles.selectedCategoryButton
+                ]}
+                onPress={() => setSelectedCategory(category)}
+                activeOpacity={0.8}
+              >
+                <Text style={[
+                  styles.categoryButtonText,
+                  selectedCategory === category && styles.selectedCategoryButtonText
+                ]}>
+                  {category}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
-      {/* Safe Driving Category Label */}
-      <View style={styles.categoryContainer}>
-        <Text style={styles.categoryTitle}>Safe Driving</Text>
-      </View>
+        {/* Road Signs Grid */}
+        {roadSignsData.length > 0 && (
+          <View style={styles.gridContainer}>
+            {renderGrid(roadSignsData)}
+          </View>
+        )}
+
+        {/* Safe Driving Category */}
+        {safeDrivingData.length > 0 && (
+          <>
+            <View style={styles.categoryContainer}>
+              <Text style={styles.categoryTitle}>Safe Driving</Text>
+            </View>
+            
+            <View style={styles.gridContainer}>
+              {renderGrid(safeDrivingData)}
+            </View>
+          </>
+        )}
+      </ScrollView>
 
       {/* Detail Modal */}
       <DetailModal />
@@ -298,71 +401,98 @@ export default function Guide() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8F9FA',
+  },
+  scrollContainer: {
+    flex: 1,
   },
   header: {
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingTop: 20,
+    paddingBottom: 16,
     backgroundColor: '#FFFFFF',
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000000',
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#6C757D',
+    fontWeight: '400',
   },
   searchContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    height: 48,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#000000',
+    color: '#1A1A1A',
+    fontWeight: '400',
   },
   tabContainer: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingVertical: 16,
+    gap: 12,
   },
   tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 8,
-    marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: '#F2F2F7',
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
   },
   activeTab: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4A90E2',
+    borderColor: '#4A90E2',
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabText: {
-    fontSize: 16,
-    color: '#000000',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#6C757D',
   },
   activeTabText: {
     color: '#FFFFFF',
   },
   categoryContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingTop: 24,
+    paddingBottom: 16,
   },
   categoryTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 10,
-    color: '#000000',
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#1A1A1A',
   },
   categoryScroll: {
     flexDirection: 'row',
@@ -372,142 +502,248 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginRight: 8,
     borderRadius: 20,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
   },
   selectedCategoryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4A90E2',
+    borderColor: '#4A90E2',
   },
-  categoryButtonText: {
+  categoryButtonTextStyle: {
     fontSize: 14,
-    color: '#000000',
+    fontWeight: '500',
+    color: '#6C757D',
   },
   selectedCategoryButtonText: {
     color: '#FFFFFF',
   },
   gridContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    padding: 20,
+    paddingBottom: 24,
   },
   row: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 20,
   },
   learningCard: {
-    width: '48%',
+    width: (width - 60) / 2,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 15,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardImageContainer: {
+    position: 'relative',
   },
   cardImage: {
     width: '100%',
-    height: 120,
+    height: 140,
     resizeMode: 'cover',
   },
-  cardContent: {
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  difficultyBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  difficultyText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  cardContent: {
+    padding: 16,
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    flex: 1,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    lineHeight: 20,
   },
-  favoriteButton: {
-    padding: 4,
-  },
-  moreButton: {
-    backgroundColor: '#007AFF',
-    marginHorizontal: 12,
+  cardMeta: {
     marginBottom: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
   },
-  moreButtonText: {
-    color: '#FFFFFF',
-    textAlign: 'center',
-    fontSize: 14,
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginLeft: 4,
     fontWeight: '500',
   },
-  
-  // Detail Modal Styles
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  learnText: {
+    fontSize: 14,
+    color: '#4A90E2',
+    fontWeight: '600',
+  },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8F9FA',
   },
   detailHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   detailTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
+    fontWeight: '700',
+    color: '#1A1A1A',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  bookmarkButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   detailContent: {
     flex: 1,
   },
+  detailImageContainer: {
+    position: 'relative',
+  },
   detailImage: {
     width: '100%',
-    height: 200,
+    height: 240,
     resizeMode: 'cover',
   },
+  detailImageOverlay: {
+    position: 'absolute',
+    bottom: 16,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailDifficultyBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  detailDifficultyText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  detailMetaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  detailMetaText: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
   detailTextContainer: {
-    padding: 20,
+    padding: 24,
     backgroundColor: '#FFFFFF',
+    marginTop: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   detailQuestion: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#007AFF',
-    marginBottom: 10,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#4A90E2',
+    marginBottom: 16,
+    lineHeight: 28,
   },
   detailDescription: {
     fontSize: 16,
-    lineHeight: 22,
-    color: '#000000',
-    marginBottom: 20,
+    lineHeight: 24,
+    color: '#495057',
+    marginBottom: 32,
   },
   importanceTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 15,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 20,
   },
   benefitsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 16,
   },
   benefitItem: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 5,
+  },
+  benefitIconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   benefitIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginBottom: 8,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   benefitText: {
-    fontSize: 12,
+    fontSize: 13,
     textAlign: 'center',
-    color: '#000000',
+    color: '#6C757D',
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });
