@@ -17,59 +17,89 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
-// Sample data for learning items
 const learningData = [
   {
     id: '1',
     title: 'Stop Sign',
     category: 'Road Signs',
     subcategory: 'Regulatory',
-    image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
+    image: 'https://media.istockphoto.com/id/486744506/vector/stop-sign-vector.jpg?s=612x612&w=0&k=20&c=ibvthRQWTgcSt2R9EaqCb8WvmSYJHBQXDCPr8C9qLj8=',
     isFavorite: false,
     difficulty: 'Beginner',
     duration: '5 min read',
+    description: 'Instructs drivers to stop and ensure the intersection is clear before proceeding.',
+    importance: [
+      { text: 'The stop sign requires all drivers to come to a complete stop before proceeding.', icon: 'https://media.istockphoto.com/id/1307624581/vector/stop-sign-with-hand-icon-info-graphics-vector-graphics.jpg?s=612x612&w=0&k=20&c=zNQnBw8lYqiOJ4DAx336gcNhYQRE0b_xelUpQKk8Rs0=' },
+      { text: 'Usually placed at intersections, visible from a distance to allow time for stopping.', icon: 'https://media.istockphoto.com/id/1283851574/vector/attention-sign-stop-sign.jpg?s=612x612&w=0&k=20&c=01ZHWFnIX21fuBG9s3oiN066gg1NkIxw14DRKhIKcMk=' },
+      { text: 'Instructs drivers to stop and ensure the intersection is clear before proceeding.', icon: 'https://media.istockphoto.com/id/1151657492/vector/vector-red-prohibition-sign-no-symbol-isolated-on-white-background.jpg?s=612x612&w=0&k=20&c=UhU_DVZGc-HnEeMayjUllgdrhYdvfUpDYPRaxFaHwmk=' }
+    ]
   },
   {
     id: '2',
-    title: 'Animal Crossing',
+    title: 'Yield Sign',
     category: 'Road Signs',
-    subcategory: 'Warning',
-    image: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f?w=400&h=300&fit=crop',
+    subcategory: 'Regulatory',
+    image: 'https://media.istockphoto.com/id/520973070/vector/yield-sign.jpg?s=612x612&w=0&k=20&c=KxHolhy5z-JtUXyu2pbjZsP3XMQxKVeKSZC5Jp41TJk=',
     isFavorite: true,
     difficulty: 'Beginner',
     duration: '3 min read',
+    description: 'Instructs drivers to give right-of-way to other vehicles or pedestrians.',
+    importance: [
+      { text: 'The yield sign indicates that drivers must prepare to stop if necessary to let a driver on another approach proceed.', icon: 'https://media.istockphoto.com/id/1972577301/vector/yield-traffic-sign.jpg?s=612x612&w=0&k=20&c=6d_1L7-iWsUUWk60lU9H5DZfPthoNB5Dw-ukg_2h9oU=' },
+      { text: 'Visible as you approach intersections, alerting drivers to prepare to yield.', icon: 'https://media.istockphoto.com/id/1307758886/vector/triangular-traffic-signal-in-white-and-red-isolated-on-white-background-mandatory-give-way.jpg?s=612x612&w=0&k=20&c=4vmv2c6tD3D-3KOrEcSLH9lKgJ8t8B0MotJ_KfsuGhM=' },
+      { text: 'Instructs drivers to give right-of-way to other vehicles or pedestrians.', icon: 'https://media.istockphoto.com/id/1036713280/vector/priority-road-sign-and-give-way-sign-vector.jpg?s=612x612&w=0&k=20&c=9K2etbXopsc2jyRwxDYRybZl5T8ehFFLnYU8rEKGYh4=' }
+    ]
   },
   {
     id: '3',
-    title: 'Speed Management',
-    category: 'Safe Driving',
-    subcategory: 'Speed',
-    image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop',
+    title: 'Animal Crossing',
+    category: 'Road Signs',
+    subcategory: 'Warning',
+    image: 'https://media.istockphoto.com/id/165956622/vector/kangaroo-crossing-sign.jpg?s=612x612&w=0&k=20&c=LyeTc9QOnGSxWP-m-YnTNCf1rX3Tf89UQM-g_wrsHBY=',
     isFavorite: true,
-    difficulty: 'Intermediate',
-    duration: '8 min read',
+    difficulty: 'Beginner',
+    duration: '4 min read',
+    description: 'Advises drivers to slow down and stay alert for animals on the road.',
+    importance: [
+      { text: 'Animal crossing signs warn drivers to watch for animals entering the roadway.', icon: 'https://media.istockphoto.com/id/165956622/vector/kangaroo-crossing-sign.jpg?s=612x612&w=0&k=20&c=LyeTc9QOnGSxWP-m-YnTNCf1rX3Tf89UQM-g_wrsHBY=' },
+      { text: 'Usually placed near forests or countryside areas where animal crossings are frequent.', icon: 'https://media.istockphoto.com/id/115983057/photo/koala-warning-sign.jpg?s=612x612&w=0&k=20&c=-ovRYduMxpsBEf9Yr2EvAXDwMcC1Oc6bVQQFQPsf-jY=' },
+      { text: 'Advises drivers to slow down and stay alert for animals on the road.', icon: 'https://media.istockphoto.com/id/487003018/photo/deer-crossing-in-canada.jpg?s=612x612&w=0&k=20&c=mPSo7HJmbyyI_uDP5MgywOvE9AN-fzFMZX4WmeZC4mk=' }
+    ]
   },
   {
     id: '4',
-    title: 'Sharing the road',
-    category: 'Safe Driving',
-    subcategory: 'General',
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
+    title: 'No U-Turn',
+    category: 'Road Signs',
+    subcategory: 'Prohibition',
+    image: 'https://media.istockphoto.com/id/1207567645/vector/u-turn-forbidden-road-sign.jpg?s=612x612&w=0&k=20&c=3NS7a31_qOIJDvtuaaF828AvIld0P7MJjZQKug-RBwA=',
     isFavorite: false,
-    difficulty: 'Advanced',
-    duration: '12 min read',
+    difficulty: 'Intermediate',
+    duration: '5 min read',
+    description: 'Instructs drivers that U-turns are not allowed to ensure smooth traffic flow.',
+    importance: [
+      { text: 'Indicates that making a U-turn at this location is prohibited.', icon: 'https://media.istockphoto.com/id/1480909666/vector/no-u-turn-sign-forbidden-turn-back-icon-no-u-turn-sign-for-traffic-symbol-outline-icon.jpg?s=612x612&w=0&k=20&c=G5U6E7gdTe5u4Xtg7xb2z82H5lQIKnqWJFW3F77DMxY=' },
+      { text: 'Usually positioned where U-turns could disrupt traffic or pose a danger.', icon: 'https://media.istockphoto.com/id/2163465612/vector/no-u-turn-sign.jpg?s=612x612&w=0&k=20&c=QvTbUVaSaoOfhIhpafAUwSbVWM-hi4Q0dUhdTh-ofBc=' },
+      { text: 'Instructs drivers that U-turns are not allowed to ensure smooth traffic flow.', icon: 'https://media.istockphoto.com/id/538099001/photo/no-left-or-u-turn.jpg?s=612x612&w=0&k=20&c=mBYVoGLQuDgrRg6ZCZbvp5aGStQsTmHR_u5hT4PF0_k=' }
+    ]
   },
   {
     id: '5',
-    title: 'Avoid distraction',
-    category: 'Safe Driving',
-    subcategory: 'General',
-    image: 'https://images.unsplash.com/photo-1551522435-a13afa10f103?w=400&h=300&fit=crop',
+    title: 'Construction Zone',
+    category: 'Road Signs',
+    subcategory: 'Temporary',
+    image: 'https://media.istockphoto.com/id/1132069677/vector/construction-site-sign-caution-construction-works-traffic-sign.jpg?s=612x612&w=0&k=20&c=riR3z5NYCAMgez94IwPUpQZwQL_5_RwkCUkMb-71Qlw=',
     isFavorite: false,
     difficulty: 'Intermediate',
     duration: '6 min read',
-  },
+    description: 'Indicates the presence of a construction area requiring reduced speed and increased caution.',
+    importance: [
+      { text: 'Warns drivers of road work ahead and the presence of workers or equipment.', icon: 'https://media.istockphoto.com/id/1468856154/vector/road-works-sign-attention-road-works-are-underway-warning-sign-yellow-triangle.jpg?s=612x612&w=0&k=20&c=PoUDITzCQMqosx-iBxK8HH1Kc8Ojc4nbFedasqP64o8=' },
+      { text: 'Placed well before the construction zone to give drivers time to slow down or change lanes.', icon: 'https://media.istockphoto.com/id/1411524602/vector/general-isolated-road-sign-with-silhouette-man-working-for-road-work-icon-button-board.jpg?s=612x612&w=0&k=20&c=dMBwl6CzWHJD3U-1OZPoOUWErZ2C5Rg7WoSAV8eJxqw=' },
+      { text: 'Indicates the presence of a construction area requiring reduced speed and increased caution.', icon: 'https://media.istockphoto.com/id/1132069677/vector/construction-site-sign-caution-construction-works-traffic-sign.jpg?s=612x612&w=0&k=20&c=riR3z5NYCAMgez94IwPUpQZwQL_5_RwkCUkMb-71Qlw=' }
+    ]
+  }
 ];
+
 
 const categories = ['All', 'Regulatory', 'Warning', 'Informational', 'Temporary', 'Prohibition'];
 
@@ -86,9 +116,7 @@ export default function Guide() {
   const [activeTab, setActiveTab] = useState('All');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [favorites, setFavorites] = useState(
-    learningData.filter(item => item.isFavorite).map(item => item.id)
-  );
+  const [favorites, setFavorites] = useState(learningData.filter(item => item.isFavorite).map(item => item.id));
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const insets = useSafeAreaInsets();
@@ -115,17 +143,8 @@ export default function Guide() {
     const matchesTab = activeTab === 'All' || favorites.includes(item.id);
     const matchesCategory = selectedCategory === 'All' || item.subcategory === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    if (activeTab === 'Favorite') {
-      return favorites.includes(item.id) && matchesCategory && matchesSearch;
-    }
-    
-    return matchesTab && matchesCategory && matchesSearch;
+    return activeTab === 'Favorite' ? favorites.includes(item.id) && matchesCategory && matchesSearch : matchesTab && matchesCategory && matchesSearch;
   });
-
-  // Group data by category
-  const roadSignsData = filteredData.filter(item => item.category === 'Road Signs');
-  const safeDrivingData = filteredData.filter(item => item.category === 'Safe Driving');
 
   const renderLearningItem = (item) => (
     <TouchableOpacity 
@@ -186,7 +205,6 @@ export default function Guide() {
     return rows;
   };
 
-  // Detail Modal Component
   const DetailModal = () => (
     <Modal
       animationType="slide"
@@ -204,7 +222,7 @@ export default function Guide() {
             <ChevronLeft size={24} color="#4A90E2" />
           </TouchableOpacity>
           <Text style={styles.detailTitle} numberOfLines={1}>
-            {selectedItem?.title || 'Speed Management'}
+            {selectedItem?.title}
           </Text>
           <TouchableOpacity 
             onPress={() => selectedItem && toggleFavorite(selectedItem.id)}
@@ -221,71 +239,44 @@ export default function Guide() {
         <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
           <View style={styles.detailImageContainer}>
             <Image 
-              source={{ 
-                uri: selectedItem?.image || 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=300&fit=crop' 
-              }} 
+              source={{ uri: selectedItem?.image }} 
               style={styles.detailImage} 
             />
             <View style={styles.detailImageOverlay}>
-              <View style={[styles.detailDifficultyBadge, { backgroundColor: getDifficultyColor(selectedItem?.difficulty || 'Beginner') }]}>
-                <Text style={styles.detailDifficultyText}>{selectedItem?.difficulty || 'Beginner'}</Text>
+              <View style={[styles.detailDifficultyBadge, { backgroundColor: getDifficultyColor(selectedItem?.difficulty) }]}>
+                <Text style={styles.detailDifficultyText}>{selectedItem?.difficulty}</Text>
               </View>
               <View style={styles.detailMetaContainer}>
                 <BookOpen size={14} color="#FFFFFF" />
-                <Text style={styles.detailMetaText}>{selectedItem?.duration || '5 min read'}</Text>
+                <Text style={styles.detailMetaText}>{selectedItem?.duration}</Text>
               </View>
             </View>
           </View>
           
           <View style={styles.detailTextContainer}>
             <Text style={styles.detailQuestion}>
-              What is {selectedItem?.title || 'Speed Management'}?
+              What is {selectedItem?.title}?
             </Text>
             <Text style={styles.detailDescription}>
-              {selectedItem?.title === 'Speed Management' 
-                ? 'Speed management means making sure vehicles travel at safe speeds to protect everyone on the road. It involves setting speed limits, using signs, speed bumps, and traffic lights to help drivers slow down when needed.'
-                : selectedItem?.title === 'Stop Sign'
-                ? 'A stop sign is a regulatory traffic sign designed to notify drivers that they must come to a complete stop and make sure the intersection is safely clear of vehicles and pedestrians before proceeding.'
-                : selectedItem?.title === 'Animal Crossing'
-                ? 'Animal crossing signs warn drivers that they are approaching an area where animals frequently cross the road. These signs help prevent accidents and protect both wildlife and drivers.'
-                : `Learn about ${selectedItem?.title || 'this topic'} and how it relates to safe driving practices. Understanding these concepts is essential for becoming a responsible driver.`
-              }
+              {selectedItem?.description}
             </Text>
             
             <Text style={styles.importanceTitle}>
-              Importance of {selectedItem?.title?.toLowerCase() || 'speed management'}
+              Importance of {selectedItem?.title.toLowerCase()}
             </Text>
             
             <View style={styles.benefitsContainer}>
-              <View style={styles.benefitItem}>
-                <View style={styles.benefitIconContainer}>
-                  <Image 
-                    source={{ uri: 'https://images.unsplash.com/photo-1581833971358-2c8b550f87b3' }} 
-                    style={styles.benefitIcon} 
-                  />
+              {selectedItem?.importance.map((benefit, index) => (
+                <View key={index} style={styles.benefitItem}>
+                  <View style={styles.benefitIconContainer}>
+                    <Image 
+                      source={{ uri: benefit.icon }} 
+                      style={styles.benefitIcon} 
+                    />
+                  </View>
+                  <Text style={styles.benefitText}>{benefit.text}</Text>
                 </View>
-                <Text style={styles.benefitText}>Reduce crashes and injuries</Text>
-              </View>
-              
-              <View style={styles.benefitItem}>
-                <View style={styles.benefitIconContainer}>
-                  <Image 
-                    source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' }} 
-                    style={styles.benefitIcon} 
-                  />
-                </View>
-                <Text style={styles.benefitText}>Create a calmer and more predictable environment</Text>
-              </View>
-              
-              <View style={styles.benefitItem}>
-                <View style={styles.benefitIconContainer}>
-                  <Image 
-                    source={{ uri: 'https://images.unsplash.com/photo-1544966503-7cc5ac882d5f' }} 
-                    style={styles.benefitIcon} 
-                  />
-                </View>
-                <Text style={styles.benefitText}>Make roads safer for walkers, bikers, and drivers</Text>
-              </View>
+              ))}
             </View>
           </View>
         </ScrollView>
@@ -298,19 +289,17 @@ export default function Guide() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
       
       <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Learn</Text>
-          <Text style={styles.headerSubtitle}>Master road safety and driving skills</Text>
+          <Text style={styles.headerTitle}>Learn Road Signs</Text>
+          <Text style={styles.headerSubtitle}>Master road signs for safer driving</Text>
         </View>
 
-        {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
             <Search size={18} color="#8E8E93" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Search topics..."
+              placeholder="Search signs..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholderTextColor="#8E8E93"
@@ -318,7 +307,6 @@ export default function Guide() {
           </View>
         </View>
 
-        {/* Tab Navigation */}
         <View style={styles.tabContainer}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'All' && styles.activeTab]}
@@ -326,7 +314,7 @@ export default function Guide() {
             activeOpacity={0.8}
           >
             <Text style={[styles.tabText, activeTab === 'All' && styles.activeTabText]}>
-              All Topics
+              All Signs
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -346,9 +334,8 @@ export default function Guide() {
           </TouchableOpacity>
         </View>
 
-        {/* Category Filters */}
         <View style={styles.categoryContainer}>
-          <Text style={styles.categoryTitle}>Road Signs</Text>
+          <Text style={styles.categoryTitle}>Categories</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
             {categories.map((category) => (
               <TouchableOpacity
@@ -371,28 +358,11 @@ export default function Guide() {
           </ScrollView>
         </View>
 
-        {/* Road Signs Grid */}
-        {roadSignsData.length > 0 && (
-          <View style={styles.gridContainer}>
-            {renderGrid(roadSignsData)}
-          </View>
-        )}
-
-        {/* Safe Driving Category */}
-        {safeDrivingData.length > 0 && (
-          <>
-            <View style={styles.categoryContainer}>
-              <Text style={styles.categoryTitle}>Safe Driving</Text>
-            </View>
-            
-            <View style={styles.gridContainer}>
-              {renderGrid(safeDrivingData)}
-            </View>
-          </>
-        )}
+        <View style={styles.gridContainer}>
+          {renderGrid(filteredData)}
+        </View>
       </ScrollView>
 
-      {/* Detail Modal */}
       <DetailModal />
     </SafeAreaView>
   );
@@ -413,7 +383,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 4,
@@ -510,7 +480,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4A90E2',
     borderColor: '#4A90E2',
   },
-  categoryButtonTextStyle: {
+  categoryButtonText: {
     fontSize: 14,
     fontWeight: '500',
     color: '#6C757D',

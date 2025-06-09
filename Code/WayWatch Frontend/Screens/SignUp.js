@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   continueText: {
-    color: 'black',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },

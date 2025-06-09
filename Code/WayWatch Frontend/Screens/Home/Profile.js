@@ -29,9 +29,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export default function Profile() {
   const [activeModal, setActiveModal] = useState(null);
   const [profileData, setProfileData] = useState({
-    name: 'Tifuh Percilia',
-    email: 'DotsyTifuh@gmail.com',
-    username: 'Tifuh Percilia',
+    name: 'Group 5 Members',
+    email: 'group5@gmail.com',
+    username: 'Group Five',
     password: '',
   });
 
