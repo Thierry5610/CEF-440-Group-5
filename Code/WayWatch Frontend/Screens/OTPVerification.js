@@ -9,6 +9,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ButtonPrimary } from '../Components/ui/Button';
 
 const OTPVerification = ({navigation}) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -36,6 +37,7 @@ const OTPVerification = ({navigation}) => {
   const handleVerify = () => {
     const otpCode = otp.join('');
     console.log('OTP entered:', otpCode);
+    navigation.navigate("HomeScreen")
   };
 
   const handleResend = () => {
@@ -92,13 +94,7 @@ const OTPVerification = ({navigation}) => {
         </View>
 
         {/* Verify Button */}
-        <TouchableOpacity 
-          style={styles.verifyButton}
-          onPress={handleVerify}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.verifyText}>Verify</Text>
-        </TouchableOpacity>
+        <ButtonPrimary onClick={handleVerify}>Verify</ButtonPrimary>
       </View>
     </SafeAreaView>
   );

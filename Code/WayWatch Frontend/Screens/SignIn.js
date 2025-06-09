@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Mail, Lock, Info, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
+import { ButtonPrimary } from '../Components/ui/Button';
 
 const SignIn = ({navigation}) => {
   const [email, setEmail] = useState('');
@@ -104,13 +105,7 @@ const SignIn = ({navigation}) => {
         </View>
 
         {/* Confirm Button */}
-        <TouchableOpacity
-          style={styles.confirmButton}
-          onPress={handleConfirm}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.confirmText}>Confirm</Text>
-        </TouchableOpacity>
+        <ButtonPrimary onClick={handleConfirm}>Confirm</ButtonPrimary>
       </View>
     </SafeAreaView>
   );
@@ -202,25 +197,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4A9EFF',
     fontWeight: '500',
-  },
-  confirmButton: {
-    backgroundColor: '#4A9EFF',
-    paddingVertical: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    shadowColor: '#4A9EFF',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  confirmText: {
-    color: 'black',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
 

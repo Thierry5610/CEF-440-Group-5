@@ -9,12 +9,12 @@ import SignUp from './Screens/SignUp';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import CarouselComponent from './Screens/Carousel';
+import HomeScreen from './Screens/HomeScreen';
 
 export default function App() {
   const Stack = createNativeStackNavigator();
   return (
     <SafeAreaProvider>
-
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Carousel" screenOptions={{ headerShown: false }}>
           <Stack.Screen name="GetStarted" component={GetStarted}/>
@@ -23,6 +23,7 @@ export default function App() {
           <Stack.Screen name="SignIn" component={SignIn} />
           <Stack.Screen name="OTPVerification" component={OTPVerification} />
           <Stack.Screen name="EnableLocation" component={EnableLocation} />
+          <Stack.Screen name="HomeScreen" component={HomeScreen}/>
         </Stack.Navigator>
       </NavigationContainer>
 
