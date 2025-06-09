@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const { width, height } = Dimensions.get('window');
 
 const Maps = () => {
-  // State management (unchanged)
+  // State management
   const [region, setRegion] = useState({
     latitude: 37.78825,
     longitude: -122.4324,
@@ -48,7 +48,16 @@ const Maps = () => {
   const [searchTimeout, setSearchTimeout] = useState(null);
   const insets = useSafeAreaInsets();
 
-  // Get user's current location (unchanged)
+  // Debug mode - set to false to disable all console logs
+  const DEBUG_MODE = false; // Change to true if you want to see logs
+
+  const debugLog = (message, data = null) => {
+    if (DEBUG_MODE) {
+      console.log(message, data || '');
+    }
+  };
+
+  // Get user's current location
   useEffect(() => {
     getCurrentLocation();
   }, []);
@@ -74,12 +83,12 @@ const Maps = () => {
         longitudeDelta: 0.0421,
       });
     } catch (error) {
-      console.error('Error getting location:', error);
+      debugLog('Error getting location:', error);
       Alert.alert('Error', 'Could not get current location');
     }
   };
 
-  // Debounced search and other functions (unchanged)
+  // Debounced search
   const debouncedSearch = (query) => {
     if (searchTimeout) {
       clearTimeout(searchTimeout);
@@ -141,12 +150,12 @@ const Maps = () => {
       setSearchResults(results);
       setShowSearchResults(true);
     } catch (error) {
-      console.error('Search error:', error);
+      debugLog('Search error:', error);
 
       try {
         await fallbackSearch(query);
       } catch (fallbackError) {
-        console.error('Fallback search failed:', fallbackError);
+        debugLog('Fallback search failed:', fallbackError);
         Alert.alert('Search Error', 'Unable to search locations. Please check your internet connection and try again.');
         setSearchResults([]);
         setShowSearchResults(false);
@@ -189,87 +198,256 @@ const Maps = () => {
     setShowSearchResults(true);
   };
 
+  // Updated routing function with clean error handling
   const getMultipleRoutes = async (start, end) => {
     try {
       setLoading(true);
 
-      const mainResponse = await fetch(
-        `https://router.project-osrm.org/route/v1/driving/${start.longitude},${start.latitude};${end.longitude},${end.latitude}?overview=full&geometries=geojson&alternatives=true&steps=true`
-      );
+      // Try GraphHopper first (silent failure)
+      const graphHopperSuccess = await getRoutesFromGraphHopper(start, end);
+      if (graphHopperSuccess) return;
 
-      const mainData = await mainResponse.json();
+      // Try Valhalla as fallback (silent failure)
+      const valhallaSuccess = await getRoutesFromValhalla(start, end);
+      if (valhallaSuccess) return;
 
-      if (mainData.routes && mainData.routes.length > 0) {
-        const processedRoutes = mainData.routes.slice(0, 3).map((route, index) => {
-          const coordinates = route.geometry.coordinates.map((coord) => ({
-            latitude: coord[1],
-            longitude: coord[0],
-          }));
+      // Final fallback: Create a simple straight-line route
+      createStraightLineRoute(start, end);
 
-          const baseTime = route.duration;
-          let trafficMultiplier, trafficCondition, routeType, color, isFastest;
-
-          if (index === 0) {
-            trafficMultiplier = 1.0;
-            trafficCondition = 'clear';
-            routeType = 'Best Route';
-            color = '#007AFF';
-            isFastest = true;
-          } else if (index === 1) {
-            trafficMultiplier = 1.2;
-            trafficCondition = 'light';
-            routeType = 'Alternative';
-            color = '#FF9500';
-            isFastest = false;
-          } else {
-            trafficMultiplier = 1.4;
-            trafficCondition = 'heavy';
-            routeType = 'Scenic Route';
-            color = '#34C759';
-            isFastest = false;
-          }
-
-          const trafficTime = baseTime * trafficMultiplier;
-
-          return {
-            id: index,
-            coordinates,
-            distance: (route.distance / 1000).toFixed(1),
-            duration: Math.round(route.duration / 60),
-            durationWithTraffic: Math.round(trafficTime / 60),
-            traffic: trafficCondition,
-            routeType,
-            color,
-            isFastest,
-            tollFree: index !== 1,
-          };
-        });
-
-        processedRoutes.sort((a, b) => a.durationWithTraffic - b.durationWithTraffic);
-
-        processedRoutes[0].isFastest = true;
-        processedRoutes[0].routeType = 'Best Route';
-
-        setRoutes(processedRoutes);
-        setSelectedRoute(0);
-        setShowRouteOptions(true);
-        setNavigationPhase('route-selection');
-        setShowingAlternateRoutes(false);
-
-        if (mapRef.current && processedRoutes.length > 0) {
-          const allCoords = processedRoutes[0].coordinates;
-          mapRef.current.fitToCoordinates(allCoords, {
-            edgePadding: { top: 100, right: 50, bottom: 350, left: 50 },
-            animated: true,
-          });
-        }
-      }
     } catch (error) {
-      console.error('Route error:', error);
-      Alert.alert('Error', 'Failed to get routes');
+      debugLog('General Route error:', error);
+      Alert.alert('Error', 'Failed to get routes. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // GraphHopper routing with silent error handling
+  const getRoutesFromGraphHopper = async (start, end) => {
+    try {
+      const graphHopperUrl = `https://graphhopper.com/api/1/route?point=${start.latitude},${start.longitude}&point=${end.latitude},${end.longitude}&vehicle=car&locale=en&calc_points=true&debug=false&elevation=false&points_encoded=false&type=json`;
+      
+      debugLog('Trying GraphHopper...');
+
+      const response = await fetch(graphHopperUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'WayWatch_V2.0/1.0.0',
+        },
+      });
+
+      if (!response.ok) {
+        debugLog(`GraphHopper unavailable (${response.status}), trying next service...`);
+        return false;
+      }
+
+      const data = await response.json();
+
+      if (!data.paths || data.paths.length === 0) {
+        debugLog('GraphHopper: No routes found, trying next service...');
+        return false;
+      }
+
+      const route = data.paths[0];
+      const coordinates = route.points.coordinates.map((coord) => ({
+        latitude: coord[1],
+        longitude: coord[0],
+      }));
+
+      const processedRoutes = [{
+        id: 0,
+        coordinates,
+        distance: (route.distance / 1000).toFixed(1),
+        duration: Math.round(route.time / 60000), // Convert from milliseconds to minutes
+        durationWithTraffic: Math.round(route.time / 60000),
+        traffic: 'clear',
+        routeType: 'Best Route',
+        color: '#007AFF',
+        isFastest: true,
+        tollFree: true,
+      }];
+
+      setRoutes(processedRoutes);
+      setSelectedRoute(0);
+      setShowRouteOptions(true);
+      setNavigationPhase('route-selection');
+      setShowingAlternateRoutes(false);
+
+      if (mapRef.current) {
+        mapRef.current.fitToCoordinates(coordinates, {
+          edgePadding: { top: 100, right: 50, bottom: 350, left: 50 },
+          animated: true,
+        });
+      }
+
+      debugLog('✅ Route loaded successfully via GraphHopper');
+      return true;
+
+    } catch (error) {
+      debugLog('GraphHopper service unavailable, trying next service...');
+      return false;
+    }
+  };
+
+  // Valhalla routing with silent error handling
+  const getRoutesFromValhalla = async (start, end) => {
+    try {
+      const valhallaUrl = `https://valhalla1.openstreetmap.de/route?json={"locations":[{"lat":${start.latitude},"lon":${start.longitude}},{"lat":${end.latitude},"lon":${end.longitude}}],"costing":"auto","directions_options":{"units":"kilometers"}}`;
+      
+      debugLog('Trying Valhalla...');
+
+      const response = await fetch(valhallaUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'WayWatch_V2.0/1.0.0',
+        },
+      });
+
+      if (!response.ok) {
+        debugLog(`Valhalla unavailable (${response.status}), using fallback route...`);
+        return false;
+      }
+
+      const data = await response.json();
+
+      if (!data.trip || !data.trip.legs || data.trip.legs.length === 0) {
+        debugLog('Valhalla: No routes found, using fallback route...');
+        return false;
+      }
+
+      const leg = data.trip.legs[0];
+      
+      // Decode the shape (polyline)
+      const coordinates = decodePolyline(leg.shape);
+
+      const processedRoutes = [{
+        id: 0,
+        coordinates,
+        distance: leg.summary.length.toFixed(1),
+        duration: Math.round(leg.summary.time / 60), // Convert from seconds to minutes
+        durationWithTraffic: Math.round(leg.summary.time / 60),
+        traffic: 'clear',
+        routeType: 'Best Route',
+        color: '#007AFF',
+        isFastest: true,
+        tollFree: true,
+      }];
+
+      setRoutes(processedRoutes);
+      setSelectedRoute(0);
+      setShowRouteOptions(true);
+      setNavigationPhase('route-selection');
+      setShowingAlternateRoutes(false);
+
+      if (mapRef.current) {
+        mapRef.current.fitToCoordinates(coordinates, {
+          edgePadding: { top: 100, right: 50, bottom: 350, left: 50 },
+          animated: true,
+        });
+      }
+
+      debugLog('✅ Route loaded successfully via Valhalla');
+      return true;
+
+    } catch (error) {
+      debugLog('Valhalla service unavailable, using fallback route...');
+      return false;
+    }
+  };
+
+  // Decode polyline function for Valhalla
+  const decodePolyline = (encoded) => {
+    const points = [];
+    let index = 0;
+    const len = encoded.length;
+    let lat = 0;
+    let lng = 0;
+
+    while (index < len) {
+      let b;
+      let shift = 0;
+      let result = 0;
+      
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      
+      const dlat = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      
+      const dlng = (result & 1) !== 0 ? ~(result >> 1) : result >> 1;
+      lng += dlng;
+
+      points.push({
+        latitude: lat / 1e6,
+        longitude: lng / 1e6,
+      });
+    }
+
+    return points;
+  };
+
+  // Final fallback: Create a straight-line route with estimated time/distance
+  const createStraightLineRoute = (start, end) => {
+    const coordinates = [start, end];
+    
+    // Calculate approximate distance using Haversine formula
+    const R = 6371; // Earth's radius in km
+    const dLat = (end.latitude - start.latitude) * Math.PI / 180;
+    const dLon = (end.longitude - start.longitude) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(start.latitude * Math.PI / 180) * Math.cos(end.latitude * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    // Estimate driving time (assuming average speed of 50 km/h)
+    const estimatedTime = Math.round((distance / 50) * 60);
+
+    const fallbackRoute = {
+      id: 0,
+      coordinates,
+      distance: distance.toFixed(1),
+      duration: estimatedTime,
+      durationWithTraffic: estimatedTime,
+      traffic: 'unknown',
+      routeType: 'Direct Route',
+      color: '#007AFF',
+      isFastest: true,
+      tollFree: true,
+    };
+
+    setRoutes([fallbackRoute]);
+    setSelectedRoute(0);
+    setShowRouteOptions(true);
+    setNavigationPhase('route-selection');
+    setShowingAlternateRoutes(false);
+
+    if (mapRef.current) {
+      mapRef.current.fitToCoordinates(coordinates, {
+        edgePadding: { top: 100, right: 50, bottom: 350, left: 50 },
+        animated: true,
+      });
+    }
+
+    // Only show this alert if no other service worked
+    Alert.alert(
+      'Limited Route Information', 
+      'Detailed routing services are temporarily unavailable. Showing approximate direct route.'
+    );
   };
 
   const selectSearchResult = (result) => {
@@ -359,12 +537,16 @@ const Maps = () => {
               styles.trafficIndicator,
               {
                 backgroundColor:
-                  route.traffic === 'clear' ? '#34C759' : route.traffic === 'light' ? '#FF9500' : '#FF3B30',
+                  route.traffic === 'clear' ? '#34C759' : 
+                  route.traffic === 'light' ? '#FF9500' : 
+                  route.traffic === 'heavy' ? '#FF3B30' : '#666666',
               },
             ]}
           >
             <Text style={styles.trafficText}>
-              {route.traffic === 'clear' ? 'Clear' : route.traffic === 'light' ? 'Light traffic' : 'Heavy traffic'}
+              {route.traffic === 'clear' ? 'Clear' : 
+               route.traffic === 'light' ? 'Light traffic' : 
+               route.traffic === 'heavy' ? 'Heavy traffic' : 'Unknown'}
             </Text>
           </View>
         </View>
