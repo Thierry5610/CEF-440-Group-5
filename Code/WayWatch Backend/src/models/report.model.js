@@ -1,39 +1,35 @@
-// src/models/Report.js
-
 import mongoose from 'mongoose';
 
 const reportSchema = new mongoose.Schema({
-  type: { // Corresponds to newReport.type (e.g., 'accident', 'road_block')
+  type: { // Incident type (e.g., 'accident', 'road_block')
     type: String,
     required: [true, 'Incident type is required'],
     trim: true,
   },
-  description: { // Corresponds to newReport.description
+  description: { // Description of incident
     type: String,
     required: [true, 'Description is required'],
     trim: true,
   },
-  location: { // Corresponds to newReport.location (address string)
+  location: { // Location/address string
     type: String,
     required: [true, 'Location is required'],
     trim: true,
   },
-  hasInjuries: { // Corresponds to newReport.hasInjuries
+  hasInjuries: { // true, false, or null if unknown
     type: Boolean,
-    default: null, // Can be true, false, or null if not answered
+    default: null,
   },
-  images: [ // Corresponds to newReport.images (array of URLs)
+  images: [ // Array of Cloudinary image URLs
     {
-      type: String, // Store Cloudinary URLs here
+      type: String,
     }
   ],
-  // --- NEW FIELD: Link to User ---
-  reportedBy: {
-    type: mongoose.Schema.ObjectId, // This is a reference to an ObjectId
-    ref: 'User', // This tells Mongoose that it refers to the 'User' model
-    required: true, // A report must be linked to a user
+  reportedBy: { // Link to user (optional now)
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: false, // changed to optional
   },
-  // --- End NEW FIELD ---
   createdAt: {
     type: Date,
     default: Date.now,
@@ -44,7 +40,7 @@ const reportSchema = new mongoose.Schema({
   },
 });
 
-// Update `updatedAt` on save
+// Auto-update 'updatedAt' on save
 reportSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
