@@ -27,3 +27,6 @@ router.get('/', getAllReports);
 router.get('/:id', getReportById);
 router.put('/:id', updateReport); // still protected? Remove protection if needed
 router.delete('/:id', deleteReport); // same here
+
+
+export default router;
