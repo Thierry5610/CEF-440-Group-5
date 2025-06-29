@@ -17,7 +17,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 // POST - Create a report
 router.post(
   '/',
-  authMiddleware,
   upload.fields([
     { name: 'icon', maxCount: 1 },
     { name: 'images', maxCount: 10 },
