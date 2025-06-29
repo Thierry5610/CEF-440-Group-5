@@ -7,12 +7,13 @@ import redisClient from '../config/redis.js';
 
 const otpStore = {
   set: async (email, otp) => {
-    return redisClient.set(`otp:${email}`, otp, { EX: 600 }); // 10 min
+    // Stores OTP in Redis with a 10-minute expiry (600 seconds)
+    return redisClient.set(`otp:${email}`, otp, { EX: 600 });
   },
   get: async (email) => redisClient.get(`otp:${email}`),
   delete: async (email) => redisClient.del(`otp:${email}`)
 };
- 
+
 // Register User & send OTP email
 export const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -24,7 +25,8 @@ export const register = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await otpStore.set(email, otp); // use Redis or Map for temporary store
+    // Store OTP in Redis
+    await otpStore.set(email, otp);
 
     const user = await User.create({
       username,
@@ -33,8 +35,9 @@ export const register = async (req, res) => {
       isVerified: false
     });
 
+    // Construct the verification URL (ensure process.env.BASE_URL is set correctly)
     const verifyUrl = `${process.env.BASE_URL}/api/v1/auth/verify/${otp}?email=${encodeURIComponent(email)}`;
-    await sendVerificationEmail(email, otp, verifyUrl); // optional
+    await sendVerificationEmail(email, otp, verifyUrl); // Send email
 
     res.status(201).json({ message: 'User registered. OTP sent to email.' });
   } catch (err) {
@@ -42,7 +45,6 @@ export const register = async (req, res) => {
     res.status(500).json({ message: 'Registration failed', error: err.message });
   }
 };
-
 
 // Resend OTP email
 export const resendOtp = async (req, res) => {
@@ -53,10 +55,10 @@ export const resendOtp = async (req, res) => {
     if (user.isVerified) return res.status(400).json({ message: 'User already verified' });
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    await otpStore.set(email, otp);
+    await otpStore.set(email, otp); // Store new OTP
 
     const verifyUrl = `${process.env.BASE_URL}/api/v1/auth/verify/${otp}?email=${encodeURIComponent(email)}`;
-    await sendVerificationEmail(email, otp, verifyUrl);
+    await sendVerificationEmail(email, otp, verifyUrl); // Send new email
 
     console.log(`OTP resent to ${email}`);
     res.json({ message: 'OTP resent successfully to your email.' });
@@ -66,8 +68,7 @@ export const resendOtp = async (req, res) => {
   }
 };
 
-
-
+// Verify OTP
 export const verifyOtp = async (req, res) => {
   const method = req.method;
   const { email, otp } = method === 'GET' ? req.query : req.body;
@@ -85,7 +86,15 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Already verified' });
     }
 
+    // --- ADDED CONSOLE.LOGS FOR DEBUGGING HERE ---
+    console.log('--- OTP Verification Debug ---');
+    console.log('Verifying OTP for email:', email);
     const storedOtp = await otpStore.get(email);
+    console.log('OTP received in request:', otp);
+    console.log('OTP retrieved from Redis (storedOtp):', storedOtp);
+    console.log('Are received and stored OTPs equal?', storedOtp === otp);
+    console.log('--- End OTP Verification Debug ---');
+
     if (!storedOtp || storedOtp !== otp) {
       if (method === 'GET') return res.redirect(`${process.env.CLIENT_URL}/invalid-otp`);
       return res.status(400).json({ message: 'Invalid or expired OTP' });
@@ -93,7 +102,7 @@ export const verifyOtp = async (req, res) => {
 
     user.isVerified = true;
     await user.save();
-    await otpStore.delete(email);
+    await otpStore.delete(email); // Delete OTP after successful verification
 
     console.log(`User verified: ${email}`);
 
@@ -106,9 +115,7 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
-
-
-// Login 
+// Login
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -133,8 +140,7 @@ export const login = async (req, res) => {
   }
 };
 
-
-//Request Password reset
+// Request Password reset
 export const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
   try {
@@ -157,7 +163,8 @@ export const requestPasswordReset = async (req, res) => {
     res.status(500).json({ message: 'Failed to generate reset link', error: err.message });
   }
 };
-//Reset password
+
+// Reset password
 export const resetPassword = async (req, res) => {
   const { token } = req.params;
   const { newPassword } = req.body;
@@ -178,8 +185,7 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-
-// Logout function 
+// Logout function
 export const logout = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -191,27 +197,27 @@ export const logout = async (req, res) => {
     const token = authHeader.split(" ")[1];
 
     // Set the token in Redis with expiry (same as JWT expiry)
+    // This is a common way to blacklist tokens for logout
     await redisClient.set(token, "blacklisted", {
-      EX: 60 * 60 * 24, // expire after 1 day
+      EX: 60 * 60 * 24, // expire after 1 day (adjust to match your JWT expiry)
     });
-    console.log("Logged out successfully")
+    console.log("Logged out successfully");
 
     return res.status(200).json({ message: "Logged out successfully" });
 
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    console.error('Logout error:', error);
+    return res.status(500).json({ message: "Server error during logout" });
   }
 };
 
- 
-//Upadate users profile
+// Update users profile
 export const updateProfile = async (req, res) => {
   try {
-    const userId = req.user.id;  
-    const updates = req.body;  
+    const userId = req.user.id;
+    const updates = req.body;
 
-     
-    const allowedUpdates = ['firstName','lastName', 'email', 'phone'];
+    const allowedUpdates = ['firstName', 'lastName', 'email', 'phone'];
     const filteredUpdates = {};
     for (const key of allowedUpdates) {
       if (updates[key] !== undefined) filteredUpdates[key] = updates[key];
@@ -228,5 +234,3 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Failed to update profile', error: error.message });
   }
 };
-
-
