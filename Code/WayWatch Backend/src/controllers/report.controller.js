@@ -82,6 +82,7 @@ export const getAllReports = asyncHandler(async (req, res) => {
   });
 });
 
+
 // @desc    Get a single incident report by ID
 export const getReportById = asyncHandler(async (req, res) => {
   const report = await Report.findById(req.params.id).populate('reportedBy', 'username email');
