@@ -1,4 +1,3 @@
-// config/redis.js
 import { Redis } from '@upstash/redis';
 
 // Initialize the Redis client using environment variables.

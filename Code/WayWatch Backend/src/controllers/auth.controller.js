@@ -7,11 +7,24 @@ import redisClient from '../config/redis.js';
 
 const otpStore = {
   set: async (email, otp) => {
-    // Stores OTP in Redis with a 10-minute expiry (600 seconds)
-    return redisClient.set(`otp:${email}`, otp, { EX: 600 });
+    const key = `otp:${email}`;
+    // Temporarily increasing expiry to 1 hour (3600 seconds) for debugging
+    const expiry = 3600;
+    console.log(`[OTP Store] SETTING key: ${key}, value: ${otp}, EX: ${expiry} seconds`);
+    return redisClient.set(key, otp, { EX: expiry });
   },
-  get: async (email) => redisClient.get(`otp:${email}`),
-  delete: async (email) => redisClient.del(`otp:${email}`)
+  get: async (email) => {
+    const key = `otp:${email}`;
+    console.log(`[OTP Store] GETTING key: ${key}`);
+    const value = await redisClient.get(key);
+    console.log(`[OTP Store] GETTING result for key ${key}:`, value); // Log what was actually retrieved
+    return value;
+  },
+  delete: async (email) => {
+    const key = `otp:${email}`;
+    console.log(`[OTP Store] DELETING key: ${key}`);
+    return redisClient.del(key);
+  }
 };
 
 // Register User & send OTP email
@@ -67,24 +80,18 @@ export const resendOtp = async (req, res) => {
     res.status(500).json({ message: 'Failed to resend OTP', error: err.message });
   }
 };
-// src/controllers/auth.controller.js
 
-// ... (previous imports and code)
-// src/controllers/auth.controller.js
-
-// ... (previous imports and code)
-
+// Verify OTP
 export const verifyOtp = async (req, res) => {
   const method = req.method;
   let { email, otp } = method === 'GET' ? req.query : req.body;
 
-  if (otp) {
-      otp = otp.toString().trim();
-  }
-
   if (!email || !otp) {
     return res.status(400).json({ message: 'Email and OTP are required' });
   }
+
+  // Ensure OTP is a string and trim whitespace
+  otp = otp.toString().trim();
 
   try {
     const user = await User.findOne({ email });
@@ -95,24 +102,21 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Already verified' });
     }
 
-    const storedOtp = await otpStore.get(email);
+    const storedOtp = await otpStore.get(email); // This will now log the actual value from Redis
 
-    // --- ADDED DETAILED DEBUGGING HERE ---
+    // --- OTP Verification Deep Debug (KEEP THESE!) ---
     console.log('--- OTP Verification Deep Debug ---');
     console.log('Verifying OTP for email:', email);
     console.log('OTP received in request (after trim):', otp);
     console.log('  Received OTP Length:', otp ? otp.length : 'N/A');
     console.log('  Received OTP Char Codes:', otp ? Array.from(otp).map(char => char.charCodeAt(0)) : 'N/A');
 
-    console.log('OTP retrieved from Redis (storedOtp):', storedOtp);
+    console.log('OTP retrieved from Redis (storedOtp):', storedOtp); // This will now show 'null' if not found
     console.log('  Stored OTP Length:', storedOtp ? storedOtp.length : 'N/A');
     console.log('  Stored OTP Char Codes:', storedOtp ? Array.from(storedOtp).map(char => char.charCodeAt(0)) : 'N/A');
 
     console.log('Are received and stored OTPs equal (===)?', storedOtp === otp);
-    // You can also try a looser comparison just for kicks, but fix the root cause
-    // console.log('Are received and stored OTPs equal (==)?', storedOtp == otp);
     console.log('--- End OTP Verification Deep Debug ---');
-    // ----------------------------------------
 
     if (!storedOtp || storedOtp !== otp) {
       if (method === 'GET') return res.redirect(`${process.env.CLIENT_URL}/invalid-otp`);
@@ -121,7 +125,7 @@ export const verifyOtp = async (req, res) => {
 
     user.isVerified = true;
     await user.save();
-    await otpStore.delete(email);
+    await otpStore.delete(email); // Delete OTP after successful verification
 
     console.log(`User verified: ${email}`);
 
@@ -133,10 +137,6 @@ export const verifyOtp = async (req, res) => {
     return res.status(500).json({ message: 'Verification failed', error: err.message });
   }
 };
-
-// ... (rest of your controller code)
-
-// ... (rest of your controller code)
 
 // Login
 export const login = async (req, res) => {
