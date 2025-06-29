@@ -14,7 +14,7 @@ export const TAB_CONFIG = [
     component: 'Notifications', 
     icon: Bell,
     label: 'Notifications',
-    badge: 3, // Example badge count
+    badge: null, // Example badge count
   },
   {
     name: 'Guide',

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import custom components and styles
 import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
@@ -13,8 +14,8 @@ import theme from '../../styles/theme';
 import { authStyles } from '../../styles/components/authStyles';
 
 const OTPVerification = ({ navigation, route }) => {
-  // Get email from route params
-  const { email } = route.params || {};
+  // Get email and other data from route params
+  const { email, username, password } = route.params || {};
   
   // State management
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -62,6 +63,22 @@ const OTPVerification = ({ navigation, route }) => {
     }
   };
 
+  // Store user data after successful verification
+  const storeUserData = async () => {
+    try {
+      const userData = {
+        email: email,
+        username: username || email.split('@')[0],
+        name: username || email.split('@')[0],
+        verified: true,
+      };
+      
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error storing user data:', error);
+    }
+  };
+
   // Handle OTP verification
   const handleVerifyOTP = async () => {
     // Validate OTP
@@ -97,6 +114,9 @@ const OTPVerification = ({ navigation, route }) => {
       const data = await response.json();
 
       if (response.ok) {
+        // Store user data
+        await storeUserData();
+        
         // OTP verification successful
         Alert.alert(
           'Success', 
@@ -141,9 +161,9 @@ const OTPVerification = ({ navigation, route }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username: 'temp', // You might want to store this in route params
+          username: username || email.split('@')[0],
           email: email,
-          password: 'temp123', // You might want to store this in route params
+          password: password || 'temp123',
           role: 'user',
         }),
       });
@@ -196,7 +216,7 @@ const OTPVerification = ({ navigation, route }) => {
 
         {/* Description */}
         <Text style={authStyles.description}>
-          Please verify by entering the code that was sent to your email or phone number
+          Please verify by entering the code that was sent to your email: {email}
         </Text>
 
         {/* OTP Input */}

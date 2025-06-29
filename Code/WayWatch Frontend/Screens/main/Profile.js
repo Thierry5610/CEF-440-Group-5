@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   Alert,
   Linking,
   StatusBar,
-  SafeAreaView,
+  ActivityIndicator,
+  Switch as RNSwitch,
 } from 'react-native';
 import {
   ChevronRight,
@@ -23,14 +24,14 @@ import {
   Edit3,
   Globe,
 } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import custom components and styles
 import ModalWrapper from '../../components/common/ModalWrapper';
-import Switch from '../../components/common/Switch';
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
 import theme from '../../styles/theme';
 import { profileStyles } from '../../styles/components/profileStyles';
 import {
-  DEFAULT_PROFILE_DATA,
   DEFAULT_NOTIFICATIONS,
   EMERGENCY_CONTACTS,
   NOTIFICATION_SETTINGS,
@@ -38,11 +39,136 @@ import {
   validateProfile,
 } from '../../utils/profileConstants';
 
+const API_BASE_URL = 'https://backend-qcus.onrender.com/api/v1';
+
 const Profile = ({ navigation }) => {
   // State management
   const [activeModal, setActiveModal] = useState(null);
-  const [profileData, setProfileData] = useState(DEFAULT_PROFILE_DATA);
+  const [profileData, setProfileData] = useState({
+    name: '',
+    email: '',
+    username: '',
+    password: '',
+  });
+  const [originalProfileData, setOriginalProfileData] = useState({});
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
+  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Load notification settings from AsyncStorage
+  const loadNotificationSettings = async () => {
+    try {
+      const savedSettings = await AsyncStorage.getItem('notificationSettings');
+      if (savedSettings) {
+        setNotifications(JSON.parse(savedSettings));
+      }
+    } catch (error) {
+      console.error('Error loading notification settings:', error);
+    }
+  };
+
+  // Save notification settings to AsyncStorage
+  const saveNotificationSettings = async (updatedSettings) => {
+    try {
+      await AsyncStorage.setItem('notificationSettings', JSON.stringify(updatedSettings));
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+    }
+  };
+
+  // Load user profile on component mount
+  useEffect(() => {
+    loadUserProfile();
+    loadNotificationSettings();
+  }, []);
+
+  // Load user profile from AsyncStorage or API
+  const loadUserProfile = async () => {
+    try {
+      setProfileLoading(true);
+      
+      // Try to get user data from AsyncStorage first
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const parsedData = JSON.parse(userData);
+        const userProfile = {
+          name: parsedData.username || parsedData.name || '',
+          email: parsedData.email || '',
+          username: parsedData.username || '',
+          password: '',
+        };
+        setProfileData(userProfile);
+        setOriginalProfileData(userProfile);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      Alert.alert('Error', 'Failed to load user profile');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Get JWT token from AsyncStorage
+  const getAuthToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      return token;
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      return null;
+    }
+  };
+
+  // Update user profile via API
+  const updateUserProfile = async (updatedData) => {
+    try {
+      const token = await getAuthToken();
+      if (!token) {
+        Alert.alert('Error', 'Authentication token not found. Please login again.');
+        return false;
+      }
+
+      console.log('Updating profile with:', { username: updatedData.username });
+      console.log('API URL:', `${API_BASE_URL}/auth/profile`);
+
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          username: updatedData.username,
+        }),
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (response.ok) {
+        // Update AsyncStorage with new user data
+        const currentUserData = await AsyncStorage.getItem('userData');
+        if (currentUserData) {
+          const parsedUserData = JSON.parse(currentUserData);
+          const updatedUserData = {
+            ...parsedUserData,
+            username: updatedData.username,
+            name: updatedData.username,
+          };
+          await AsyncStorage.setItem('userData', JSON.stringify(updatedUserData));
+          console.log('Updated user data stored:', updatedUserData);
+        }
+        
+        return true;
+      } else {
+        throw new Error(data.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
 
   // Modal handlers
   const openModal = (modalName) => {
@@ -51,10 +177,14 @@ const Profile = ({ navigation }) => {
 
   const closeModal = () => {
     setActiveModal(null);
+    // Reset profile data to original values if modal is closed without saving
+    if (activeModal === 'edit') {
+      setProfileData(originalProfileData);
+    }
   };
 
   // Profile update handler
-  const updateProfile = () => {
+  const updateProfile = async () => {
     const validation = validateProfile(profileData);
     
     if (!validation.isValid) {
@@ -63,27 +193,59 @@ const Profile = ({ navigation }) => {
       return;
     }
 
-    setProfileData((prev) => ({
-      ...prev,
-      name: prev.username,
-    }));
+    // Check if anything actually changed
+    if (profileData.username === originalProfileData.username) {
+      Alert.alert('Info', 'No changes to save');
+      return;
+    }
 
-    Alert.alert('Success', 'Profile updated successfully');
-    closeModal();
+    setLoading(true);
+
+    try {
+      await updateUserProfile(profileData);
+      
+      // Update the original data to reflect the changes
+      setOriginalProfileData({
+        ...profileData,
+        name: profileData.username,
+      });
+      
+      setProfileData(prev => ({
+        ...prev,
+        name: prev.username,
+      }));
+
+      Alert.alert('Success', 'Profile updated successfully');
+      closeModal();
+    } catch (error) {
+      Alert.alert('Error', error.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Notification update handler
-  const updateNotifications = () => {
-    Alert.alert('Success', 'Notification settings updated');
-    closeModal();
+  const updateNotifications = async () => {
+    try {
+      await saveNotificationSettings(notifications);
+      Alert.alert('Success', 'Notification settings updated');
+      closeModal();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save notification settings');
+    }
   };
 
   // Toggle notification setting
   const toggleNotification = (key) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setNotifications((prev) => {
+      const updated = {
+        ...prev,
+        [key]: !prev[key],
+      };
+      // Save immediately when toggled
+      saveNotificationSettings(updated);
+      return updated;
+    });
   };
 
   // Handle phone call
@@ -115,13 +277,21 @@ const Profile = ({ navigation }) => {
         {
           text: 'Logout',
           style: 'destructive',
-          onPress: () => {
-            // Navigate back to the auth stack
-            if (navigation) {
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Carousel' }],
-              });
+          onPress: async () => {
+            try {
+              // Clear all stored data
+              await AsyncStorage.multiRemove(['authToken', 'userData']);
+              
+              // Navigate back to the auth stack
+              if (navigation) {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Carousel' }],
+                });
+              }
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout properly');
             }
           },
         },
@@ -180,11 +350,12 @@ const Profile = ({ navigation }) => {
   const NotificationItem = ({ setting }) => (
     <View style={profileStyles.notificationItem}>
       <Text style={profileStyles.notificationText}>{setting.title}</Text>
-      <Switch
+      <RNSwitch
         value={notifications[setting.key]}
         onValueChange={() => toggleNotification(setting.key)}
         trackColor={{ false: '#E5E5EA', true: '#4A90E2' }}
         thumbColor="#FFFFFF"
+        ios_backgroundColor="#E5E5EA"
       />
     </View>
   );
@@ -210,10 +381,28 @@ const Profile = ({ navigation }) => {
   const generalSettings = NOTIFICATION_SETTINGS.filter(s => s.category === 'general');
   const soundSettings = NOTIFICATION_SETTINGS.filter(s => s.category === 'sound');
 
-  return (
-    <SafeAreaView style={profileStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+  // Show loading screen while profile is being loaded
+  if (profileLoading) {
+    return (
+      <SafeAreaWrapper
+        style={[profileStyles.container, { justifyContent: 'center', alignItems: 'center' }]}
+        statusBarStyle="dark-content"
+        backgroundColor={theme.colors.white}
+        edges={['top']}
+      >
+        <ActivityIndicator size="large" color="#4A90E2" />
+        <Text style={{ marginTop: 16, color: '#666' }}>Loading profile...</Text>
+      </SafeAreaWrapper>
+    );
+  }
 
+  return (
+    <SafeAreaWrapper
+      style={profileStyles.container}
+      statusBarStyle="dark-content"
+      backgroundColor={theme.colors.white}
+      edges={['top']}
+    >
       <ScrollView style={profileStyles.content}>
         <Text style={profileStyles.title}>Profile</Text>
 
@@ -227,7 +416,7 @@ const Profile = ({ navigation }) => {
             <User size={40} color="#FFFFFF" />
           </View>
           <View style={profileStyles.profileInfo}>
-            <Text style={profileStyles.profileName}>{profileData.name}</Text>
+            <Text style={profileStyles.profileName}>{profileData.name || profileData.username}</Text>
             <Text style={profileStyles.profileEmail}>{profileData.email}</Text>
           </View>
           <ChevronRight size={20} color="#C7C7CC" />
@@ -263,7 +452,7 @@ const Profile = ({ navigation }) => {
       >
         <ModalWrapper style={profileStyles.modalContainer}>
           <View style={profileStyles.modalHeader}>
-            <TouchableOpacity onPress={closeModal}>
+            <TouchableOpacity onPress={closeModal} disabled={loading}>
               <ChevronLeft size={24} color="#4A90E2" />
             </TouchableOpacity>
             <Text style={profileStyles.modalTitle}>Profile</Text>
@@ -284,14 +473,17 @@ const Profile = ({ navigation }) => {
 
             <Text style={profileStyles.inputLabel}>Email</Text>
             <TextInput
-              style={profileStyles.textInput}
+              style={[profileStyles.textInput, { opacity: 0.6 }]}
               value={profileData.email}
-              onChangeText={(text) => setProfileData((prev) => ({ ...prev, email: text }))}
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor="#C4C4C4"
+              editable={false}
             />
+            <Text style={{ fontSize: 12, color: '#999', marginTop: 4, marginBottom: 16 }}>
+              Email cannot be changed
+            </Text>
 
             <Text style={profileStyles.inputLabel}>Username</Text>
             <TextInput
@@ -300,20 +492,22 @@ const Profile = ({ navigation }) => {
               onChangeText={(text) => setProfileData((prev) => ({ ...prev, username: text }))}
               placeholder="Enter your username"
               placeholderTextColor="#C4C4C4"
+              editable={!loading}
             />
 
-            <Text style={profileStyles.inputLabel}>Password</Text>
-            <TextInput
-              style={profileStyles.textInput}
-              value={profileData.password}
-              onChangeText={(text) => setProfileData((prev) => ({ ...prev, password: text }))}
-              placeholder="Choose password (min 6 characters)"
-              secureTextEntry
-              placeholderTextColor="#C4C4C4"
-            />
-
-            <TouchableOpacity style={profileStyles.updateButton} onPress={updateProfile}>
-              <Text style={profileStyles.updateButtonText}>Update</Text>
+            <TouchableOpacity 
+              style={[
+                profileStyles.updateButton,
+                loading && { opacity: 0.6 }
+              ]} 
+              onPress={updateProfile}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={profileStyles.updateButtonText}>Update</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </ModalWrapper>
@@ -377,7 +571,7 @@ const Profile = ({ navigation }) => {
           </ScrollView>
         </ModalWrapper>
       </Modal>
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
 

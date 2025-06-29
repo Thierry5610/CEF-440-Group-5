@@ -7,6 +7,7 @@ import {
   Alert,
 } from 'react-native';
 import { Mail, Lock, Info, Eye, EyeOff, ChevronLeft } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import custom components and styles
 import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
@@ -48,6 +49,22 @@ const SignIn = ({ navigation }) => {
       const data = await response.json();
 
       if (response.ok) {
+        // Store authentication token
+        if (data.token) {
+          await AsyncStorage.setItem('authToken', data.token);
+        }
+
+        // Store user data for profile usage
+        const userData = {
+          email: email.trim(),
+          username: data.user?.username || email.split('@')[0], // Fallback to email prefix if no username
+          name: data.user?.name || data.user?.username || email.split('@')[0],
+          // Add any other user data from the response
+          ...data.user
+        };
+        
+        await AsyncStorage.setItem('userData', JSON.stringify(userData));
+
         // Login successful
         Alert.alert('Success', 'Login successful!', [
           {

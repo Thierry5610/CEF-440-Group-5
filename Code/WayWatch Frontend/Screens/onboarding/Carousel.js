@@ -6,7 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  StatusBar,
+  // Remove StatusBar from here
 } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 
@@ -48,8 +48,14 @@ const CarouselComponent = ({ navigation }) => {
   };
 
   return (
-    <View style={onboardingStyles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" translucent={false} />
+    <SafeAreaWrapper // Wrap the entire content with SafeAreaWrapper
+      style={onboardingStyles.container}
+      statusBarStyle="dark-content" // Set appropriate status bar style
+      backgroundColor="#F8F9FA" // Set background color for status bar area
+      edges={['top']} // Apply safe area to the top edge only, consistent with Notifications and Profile
+    >
+      {/* Remove StatusBar component directly as SafeAreaWrapper handles it */}
+      {/* <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" translucent={false} /> */}
       
       <ScrollView
         ref={scrollViewRef}
@@ -102,7 +108,7 @@ const CarouselComponent = ({ navigation }) => {
           <ChevronRight size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaWrapper>
   );
 };
 

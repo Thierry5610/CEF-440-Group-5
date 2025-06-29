@@ -82,45 +82,7 @@ export const getRandomImage = (category = 'traffic') => {
 
 // Default notification data
 export const DEFAULT_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'traffic',
-    title: 'Internal traffic',
-    subtitle: 'ANYFOCUS',
-    time: '3:00 PM',
-    icon: '🚗',
-    location: 'Mile 16, Douala',
-    date: '10/11/2025',
-    actualTime: '11:00 PM',
-    images: [getRandomImage('traffic')],
-    description: 'Heavy traffic congestion on main road causing significant delays for commuters.',
-  },
-  {
-    id: 2,
-    type: 'accident',
-    title: 'Car crash',
-    subtitle: 'ANYFOCUS',
-    time: '2:00 PM',
-    icon: '🚙',
-    location: 'Bonanjo, Douala',
-    date: '10/11/2025',
-    actualTime: '11:00 PM',
-    images: [getRandomImage('accident'), getRandomImage('accident')],
-    description: 'Vehicle collision reported with minor injuries. Emergency services responded quickly.',
-  },
-  {
-    id: 3,
-    type: 'construction',
-    title: 'Road construction',
-    subtitle: 'ANYFOCUS',
-    time: '1:00 PM',
-    icon: '🚧',
-    location: 'Akwa, Douala',
-    date: '10/11/2025',
-    actualTime: '11:00 PM',
-    images: [getRandomImage('construction')],
-    description: 'Ongoing road maintenance work causing lane closures during peak hours.',
-  },
+
 ];
 
 export default {

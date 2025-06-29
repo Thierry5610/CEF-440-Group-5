@@ -422,6 +422,17 @@ export const guideStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa', // Exact original background
   },
+    fullScreenLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)', // Translucent white background
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000, // Ensures it's on top of other content
+  },
 });
 
 export default guideStyles;
