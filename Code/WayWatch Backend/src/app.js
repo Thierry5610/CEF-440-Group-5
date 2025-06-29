@@ -37,6 +37,8 @@ app.use('/api/v1/location', locationRoutes);
 app.use('/api/v1/roadsign', roadsignRoutes);
 app.use('/api/v1/road', reportRoutes);
 app.use('/api/v1/alert', alertRoutes);
+app.use('/api/v1/road/report', reportRoutes);
+
 
 app.use(notFound);
 app.use(errorHandler);
