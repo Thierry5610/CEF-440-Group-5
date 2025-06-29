@@ -1,15 +1,21 @@
+// src/routes/report.routes.js
+
 import { Router } from 'express';
-import { createReport, getAllReports } from '../controllers/report.controller.js';
-import { authMiddleware } from '../middlewares/auth.middleware.js';
+import {
+  createReport,
+  getAllReports,
+  getReportById,
+  updateReport,
+  deleteReport,
+} from '../controllers/report.controller.js';
 import multer from 'multer';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() }); // for base64 or buffer upload
+const upload = multer({ storage: multer.memoryStorage() });
 
-// Accept specific form fields
+// 🔓 REMOVE `protect` to make the route public
 router.post(
-  '/reports',
-  authMiddleware,
+  '/',
   upload.fields([
     { name: 'icon', maxCount: 1 },
     { name: 'images', maxCount: 10 }
@@ -17,6 +23,10 @@ router.post(
   createReport
 );
 
-router.get('/reports', authMiddleware, getAllReports);
+router.get('/', getAllReports);
+router.get('/:id', getReportById);
+router.put('/:id', updateReport); // still protected? Remove protection if needed
+router.delete('/:id', deleteReport); // same here
+
 
 export default router;

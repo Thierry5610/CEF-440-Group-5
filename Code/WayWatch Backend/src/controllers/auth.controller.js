@@ -243,26 +243,28 @@ export const logout = async (req, res) => {
   }
 };
 
-// Update users profile
+// Update user's username only
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
-    const updates = req.body;
+    const { username } = req.body;
 
-    const allowedUpdates = ['firstName', 'lastName', 'email', 'phone'];
-    const filteredUpdates = {};
-    for (const key of allowedUpdates) {
-      if (updates[key] !== undefined) filteredUpdates[key] = updates[key];
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required to update' });
     }
 
-    // Find user by id and update
-    const user = await User.findByIdAndUpdate(userId, filteredUpdates, { new: true, runValidators: true });
+    // Find user by id and update username only
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { username },
+      { new: true, runValidators: true }
+    );
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.json({ message: 'Profile updated successfully', user });
+    res.json({ message: 'Username updated successfully', user });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Failed to update profile', error: error.message });
+    console.error('Update username error:', error);
+    res.status(500).json({ message: 'Failed to update username', error: error.message });
   }
 };
