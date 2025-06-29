@@ -67,11 +67,19 @@ export const resendOtp = async (req, res) => {
     res.status(500).json({ message: 'Failed to resend OTP', error: err.message });
   }
 };
+// src/controllers/auth.controller.js
 
-// Verify OTP
+// ... (previous imports and code)
+
 export const verifyOtp = async (req, res) => {
   const method = req.method;
-  const { email, otp } = method === 'GET' ? req.query : req.body;
+  let { email, otp } = method === 'GET' ? req.query : req.body; // Use 'let' to allow reassigning 'otp'
+
+  // --- ADD THIS LINE TO TRIM WHITESPACE ---
+  if (otp) {
+      otp = otp.toString().trim(); // Ensure it's a string then remove leading/trailing whitespace
+  }
+  // ----------------------------------------
 
   if (!email || !otp) {
     return res.status(400).json({ message: 'Email and OTP are required' });
@@ -86,11 +94,11 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Already verified' });
     }
 
-    // --- ADDED CONSOLE.LOGS FOR DEBUGGING HERE ---
+    // --- Keep your debugging logs for a moment to confirm the fix ---
     console.log('--- OTP Verification Debug ---');
     console.log('Verifying OTP for email:', email);
+    console.log('OTP received in request (after trim):', otp); // Log the trimmed value
     const storedOtp = await otpStore.get(email);
-    console.log('OTP received in request:', otp);
     console.log('OTP retrieved from Redis (storedOtp):', storedOtp);
     console.log('Are received and stored OTPs equal?', storedOtp === otp);
     console.log('--- End OTP Verification Debug ---');
@@ -102,7 +110,7 @@ export const verifyOtp = async (req, res) => {
 
     user.isVerified = true;
     await user.save();
-    await otpStore.delete(email); // Delete OTP after successful verification
+    await otpStore.delete(email);
 
     console.log(`User verified: ${email}`);
 
@@ -114,6 +122,8 @@ export const verifyOtp = async (req, res) => {
     return res.status(500).json({ message: 'Verification failed', error: err.message });
   }
 };
+
+// ... (rest of your controller code)
 
 // Login
 export const login = async (req, res) => {
