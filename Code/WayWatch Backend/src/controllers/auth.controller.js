@@ -5,27 +5,7 @@ import { User } from '../models/user.model.js';
 import { sendVerificationEmail } from '../utils/email.js';
 import redisClient from '../config/redis.js';
 
-const otpStore = {
-  set: async (email, otp) => {
-    const key = `otp:${email}`;
-    // Temporarily increasing expiry to 1 hour (3600 seconds) for debugging
-    const expiry = 3600;
-    console.log(`[OTP Store] SETTING key: ${key}, value: ${otp}, EX: ${expiry} seconds`);
-    return redisClient.set(key, otp, { EX: expiry });
-  },
-  get: async (email) => {
-    const key = `otp:${email}`;
-    console.log(`[OTP Store] GETTING key: ${key}`);
-    const value = await redisClient.get(key);
-    console.log(`[OTP Store] GETTING result for key ${key}:`, value); // Log what was actually retrieved
-    return value;
-  },
-  delete: async (email) => {
-    const key = `otp:${email}`;
-    console.log(`[OTP Store] DELETING key: ${key}`);
-    return redisClient.del(key);
-  }
-};
+ 
 
 // Register User & send OTP email
 export const register = async (req, res) => {
@@ -82,6 +62,33 @@ export const resendOtp = async (req, res) => {
 };
 
 // Verify OTP
+// Updated otpStore object with proper string handling
+const otpStore = {
+  set: async (email, otp) => {
+    const key = `otp:${email}`;
+    // Ensure OTP is stored as a string
+    const otpString = otp.toString();
+    const expiry = 3600;
+    console.log(`[OTP Store] SETTING key: ${key}, value: ${otpString}, EX: ${expiry} seconds`);
+    return redisClient.set(key, otpString, { EX: expiry });
+  },
+  get: async (email) => {
+    const key = `otp:${email}`;
+    console.log(`[OTP Store] GETTING key: ${key}`);
+    const value = await redisClient.get(key);
+    // Ensure the retrieved value is a string (Redis should return strings, but just to be safe)
+    const stringValue = value ? value.toString() : null;
+    console.log(`[OTP Store] GETTING result for key ${key}:`, stringValue);
+    return stringValue;
+  },
+  delete: async (email) => {
+    const key = `otp:${email}`;
+    console.log(`[OTP Store] DELETING key: ${key}`);
+    return redisClient.del(key);
+  }
+};
+
+// Updated verifyOtp function with better type handling
 export const verifyOtp = async (req, res) => {
   const method = req.method;
   let { email, otp } = method === 'GET' ? req.query : req.body;
@@ -102,16 +109,18 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Already verified' });
     }
 
-    const storedOtp = await otpStore.get(email); // This will now log the actual value from Redis
+    const storedOtp = await otpStore.get(email);
 
-    // --- OTP Verification Deep Debug (KEEP THESE!) ---
+    // --- OTP Verification Deep Debug ---
     console.log('--- OTP Verification Deep Debug ---');
     console.log('Verifying OTP for email:', email);
     console.log('OTP received in request (after trim):', otp);
+    console.log('  Received OTP Type:', typeof otp);
     console.log('  Received OTP Length:', otp ? otp.length : 'N/A');
     console.log('  Received OTP Char Codes:', otp ? Array.from(otp).map(char => char.charCodeAt(0)) : 'N/A');
 
-    console.log('OTP retrieved from Redis (storedOtp):', storedOtp); // This will now show 'null' if not found
+    console.log('OTP retrieved from Redis (storedOtp):', storedOtp);
+    console.log('  Stored OTP Type:', typeof storedOtp);
     console.log('  Stored OTP Length:', storedOtp ? storedOtp.length : 'N/A');
     console.log('  Stored OTP Char Codes:', storedOtp ? Array.from(storedOtp).map(char => char.charCodeAt(0)) : 'N/A');
 
@@ -125,7 +134,7 @@ export const verifyOtp = async (req, res) => {
 
     user.isVerified = true;
     await user.save();
-    await otpStore.delete(email); // Delete OTP after successful verification
+    await otpStore.delete(email);
 
     console.log(`User verified: ${email}`);
 
