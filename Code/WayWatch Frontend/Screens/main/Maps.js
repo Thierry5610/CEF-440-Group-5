@@ -2,25 +2,24 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   Alert,
   FlatList,
   Modal,
   ActivityIndicator,
-  Dimensions,
   Platform,
-  SafeAreaView,
   ScrollView,
-  StatusBar,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import * as Location from 'expo-location';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const { width, height } = Dimensions.get('window');
+// Import custom components and styles
+import SafeAreaWrapper from '../../components/common/SafeAreaWrapper';
+import { useLocation } from '../../hooks/useLocation';
+import theme from '../../styles/theme';
+import { mapStyles } from '../../styles/components/mapStyles';
+import { globalStyles } from '../../styles/globalStyles';
 
 const Maps = () => {
   // State management
@@ -30,7 +29,7 @@ const Maps = () => {
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
-  const [currentLocation, setCurrentLocation] = useState(null);
+  
   const [destination, setDestination] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -46,10 +45,12 @@ const Maps = () => {
 
   const mapRef = useRef(null);
   const [searchTimeout, setSearchTimeout] = useState(null);
-  const insets = useSafeAreaInsets();
+  
+  // Custom hooks
+  const { location: currentLocation, getCurrentLocation } = useLocation();
 
   // Debug mode - set to false to disable all console logs
-  const DEBUG_MODE = false; // Change to true if you want to see logs
+  const DEBUG_MODE = false;
 
   const debugLog = (message, data = null) => {
     if (DEBUG_MODE) {
@@ -57,36 +58,16 @@ const Maps = () => {
     }
   };
 
-  // Get user's current location
+  // Update region when current location changes
   useEffect(() => {
-    getCurrentLocation();
-  }, []);
-
-  const getCurrentLocation = async () => {
-    try {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission denied', 'Location permission is required');
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      const userLocation = {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      };
-
-      setCurrentLocation(userLocation);
+    if (currentLocation) {
       setRegion({
-        ...userLocation,
+        ...currentLocation,
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
       });
-    } catch (error) {
-      debugLog('Error getting location:', error);
-      Alert.alert('Error', 'Could not get current location');
     }
-  };
+  }, [currentLocation]);
 
   // Debounced search
   const debouncedSearch = (query) => {
@@ -263,7 +244,7 @@ const Maps = () => {
         durationWithTraffic: Math.round(route.time / 60000),
         traffic: 'clear',
         routeType: 'Best Route',
-        color: '#007AFF',
+        color: theme.colors.primary[500],
         isFastest: true,
         tollFree: true,
       }];
@@ -330,7 +311,7 @@ const Maps = () => {
         durationWithTraffic: Math.round(leg.summary.time / 60),
         traffic: 'clear',
         routeType: 'Best Route',
-        color: '#007AFF',
+        color: theme.colors.primary[500],
         isFastest: true,
         tollFree: true,
       }];
@@ -425,7 +406,7 @@ const Maps = () => {
       durationWithTraffic: estimatedTime,
       traffic: 'unknown',
       routeType: 'Direct Route',
-      color: '#007AFF',
+      color: theme.colors.primary[500],
       isFastest: true,
       tollFree: true,
     };
@@ -516,34 +497,35 @@ const Maps = () => {
 
   const RouteOption = ({ route, isSelected, onSelect }) => (
     <TouchableOpacity
-      style={[styles.routeOption, isSelected && styles.selectedRouteOption]}
+      style={[mapStyles.routeOption, isSelected && mapStyles.selectedRouteOption]}
       onPress={() => onSelect(route.id)}
+      activeOpacity={0.8}
     >
-      <View style={styles.routeHeader}>
-        <View style={styles.routeTypeContainer}>
-          <View style={[styles.routeColorIndicator, { backgroundColor: route.color }]} />
-          <Text style={styles.routeType}>{route.routeType}</Text>
-          {route.isFastest && <Text style={styles.fastestBadge}>FASTEST</Text>}
+      <View style={mapStyles.routeHeader}>
+        <View style={mapStyles.routeTypeContainer}>
+          <View style={[mapStyles.routeColorIndicator, { backgroundColor: route.color }]} />
+          <Text style={mapStyles.routeType}>{route.routeType}</Text>
+          {route.isFastest && <Text style={mapStyles.fastestBadge}>FASTEST</Text>}
         </View>
-        <Text style={styles.routeTime}>{route.durationWithTraffic} min</Text>
+        <Text style={mapStyles.routeTime}>{route.durationWithTraffic} min</Text>
       </View>
 
-      <View style={styles.routeDetails}>
-        <Text style={styles.routeDistance}>{route.distance} km</Text>
-        <View style={styles.routeFeatures}>
-          {route.tollFree && <Text style={styles.featureBadge}>Toll-free</Text>}
+      <View style={mapStyles.routeDetails}>
+        <Text style={mapStyles.routeDistance}>{route.distance} km</Text>
+        <View style={mapStyles.routeFeatures}>
+          {route.tollFree && <Text style={mapStyles.featureBadge}>Toll-free</Text>}
           <View
             style={[
-              styles.trafficIndicator,
+              mapStyles.trafficIndicator,
               {
                 backgroundColor:
-                  route.traffic === 'clear' ? '#34C759' : 
-                  route.traffic === 'light' ? '#FF9500' : 
-                  route.traffic === 'heavy' ? '#FF3B30' : '#666666',
+                  route.traffic === 'clear' ? theme.colors.trafficClear : 
+                  route.traffic === 'light' ? theme.colors.trafficLight : 
+                  route.traffic === 'heavy' ? theme.colors.trafficHeavy : theme.colors.neutral[600],
               },
             ]}
           >
-            <Text style={styles.trafficText}>
+            <Text style={mapStyles.trafficText}>
               {route.traffic === 'clear' ? 'Clear' : 
                route.traffic === 'light' ? 'Light traffic' : 
                route.traffic === 'heavy' ? 'Heavy traffic' : 'Unknown'}
@@ -553,7 +535,7 @@ const Maps = () => {
       </View>
 
       {route.duration !== route.durationWithTraffic && (
-        <Text style={styles.normalTime}>{route.duration} min without traffic</Text>
+        <Text style={mapStyles.normalTime}>{route.duration} min without traffic</Text>
       )}
     </TouchableOpacity>
   );
@@ -566,18 +548,16 @@ const Maps = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Status Bar Configuration */}
-      <StatusBar
-        barStyle={navigationPhase === 'navigating' ? 'dark-content' : 'light-content'}
-        backgroundColor={navigationPhase === 'navigating' ? '#FFFFFF' : 'transparent'}
-        translucent={true}
-      />
-
+    <SafeAreaWrapper 
+      style={mapStyles.container}
+      statusBarStyle={navigationPhase === 'navigating' ? 'dark-content' : 'light-content'}
+      statusBarBackgroundColor={navigationPhase === 'navigating' ? theme.colors.white : 'transparent'}
+      edges={[]}
+    >
       {/* Map */}
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={mapStyles.map}
         region={region}
         onRegionChangeComplete={setRegion}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
@@ -587,16 +567,16 @@ const Maps = () => {
       >
         {currentLocation && (
           <Marker coordinate={currentLocation} title="Your Location" anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={styles.currentLocationMarker}>
-              <View style={styles.currentLocationDot} />
+            <View style={mapStyles.currentLocationMarker}>
+              <View style={mapStyles.currentLocationDot} />
             </View>
           </Marker>
         )}
 
         {destination && (
           <Marker coordinate={destination} title="Destination" description={destination.name}>
-            <View style={styles.destinationMarker}>
-              <Ionicons name="location" size={30} color="#FF3B30" />
+            <View style={mapStyles.destinationMarker}>
+              <Ionicons name="location" size={30} color={theme.colors.error[500]} />
             </View>
           </Marker>
         )}
@@ -615,12 +595,16 @@ const Maps = () => {
 
       {/* Search Interface */}
       {navigationPhase === 'search' && (
-        <SafeAreaView style={[styles.searchContainer, { paddingTop: insets.top }]}>
-          <Text style={styles.screenTitle}>Search Location</Text>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+        <SafeAreaWrapper 
+          style={mapStyles.searchContainer}
+          edges={['top']}
+          backgroundColor={theme.colors.white}
+        >
+          <Text style={mapStyles.searchTitle}>Search Location</Text>
+          <View style={mapStyles.searchBar}>
+            <Ionicons name="search" size={20} color={theme.colors.neutral[600]} style={mapStyles.searchIcon} />
             <TextInput
-              style={styles.searchInput}
+              style={mapStyles.searchInput}
               placeholder="Enter destination"
               value={searchQuery}
               onChangeText={(text) => {
@@ -632,6 +616,7 @@ const Maps = () => {
                   setShowSearchResults(false);
                 }
               }}
+              placeholderTextColor={theme.colors.neutral[500]}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
@@ -640,66 +625,70 @@ const Maps = () => {
                   setSearchResults([]);
                   setShowSearchResults(false);
                 }}
-                style={styles.clearButton}
+                style={mapStyles.clearButton}
               >
-                <Ionicons name="close" size={20} color="#666" />
+                <Ionicons name="close" size={20} color={theme.colors.neutral[600]} />
               </TouchableOpacity>
             )}
           </View>
 
           {showSearchResults && (
-            <View style={styles.searchResultsContainer}>
+            <View style={mapStyles.searchResultsContainer}>
               {loading ? (
-                <ActivityIndicator size="small" color="#007AFF" style={styles.loader} />
+                <ActivityIndicator size="small" color={theme.colors.primary[500]} style={mapStyles.loader} />
               ) : (
                 <FlatList
                   data={searchResults}
                   keyExtractor={(item) => item.id.toString()}
                   renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.searchResultItem} onPress={() => selectSearchResult(item)}>
-                      <MaterialIcons name="place" size={20} color="#666" />
-                      <View style={styles.searchResultTextContainer}>
-                        <Text style={styles.searchResultTitle}>{item.shortName}</Text>
-                        <Text style={styles.searchResultSubtitle} numberOfLines={1}>
+                    <TouchableOpacity 
+                      style={mapStyles.searchResultItem} 
+                      onPress={() => selectSearchResult(item)}
+                      activeOpacity={0.8}
+                    >
+                      <MaterialIcons name="place" size={20} color={theme.colors.neutral[600]} />
+                      <View style={mapStyles.searchResultTextContainer}>
+                        <Text style={mapStyles.searchResultTitle}>{item.shortName}</Text>
+                        <Text style={mapStyles.searchResultSubtitle} numberOfLines={1}>
                           {item.name}
                         </Text>
                       </View>
                     </TouchableOpacity>
                   )}
-                  style={styles.searchResultsList}
+                  style={mapStyles.searchResultsList}
                 />
               )}
             </View>
           )}
 
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity style={styles.currentLocationButton} onPress={centerOnUser}>
-              <Ionicons name="locate" size={20} color="#007AFF" />
-              <Text style={styles.currentLocationText}>Your current location</Text>
+          <View style={mapStyles.actionButtonsContainer}>
+            <TouchableOpacity style={mapStyles.currentLocationButton} onPress={centerOnUser}>
+              <Ionicons name="locate" size={20} color={theme.colors.primary[500]} />
+              <Text style={mapStyles.currentLocationText}>Your current location</Text>
             </TouchableOpacity>
 
             {destination && (
-              <TouchableOpacity style={styles.startTripButton} onPress={startRoutePlanning}>
-                <Text style={styles.startTripButtonText}>Start Trip</Text>
+              <TouchableOpacity style={mapStyles.startTripButton} onPress={startRoutePlanning}>
+                <Text style={mapStyles.startTripButtonText}>Start Trip</Text>
               </TouchableOpacity>
             )}
           </View>
-        </SafeAreaView>
+        </SafeAreaWrapper>
       )}
 
       {/* Route Selection Interface */}
       {navigationPhase === 'route-selection' && (
-        <View style={[styles.routeSelectionContainer, { paddingBottom: insets.bottom }]}>
-          <SafeAreaView edges={['top']}>
-            <View style={styles.routeSelectionHeader}>
-              <TouchableOpacity onPress={resetToSearch} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        <View style={[mapStyles.routeSelectionContainer, { paddingBottom: theme.layout.safeArea.bottom }]}>
+          <SafeAreaWrapper edges={['top']} backgroundColor="transparent">
+            <View style={mapStyles.routeSelectionHeader}>
+              <TouchableOpacity onPress={resetToSearch} style={globalStyles.backButton}>
+                <Ionicons name="arrow-back" size={24} color={theme.colors.primary[500]} />
               </TouchableOpacity>
-              <Text style={styles.screenTitle}>Choose Your Route</Text>
+              <Text style={mapStyles.searchTitle}>Choose Your Route</Text>
             </View>
-          </SafeAreaView>
+          </SafeAreaWrapper>
 
-          <ScrollView style={styles.routesList} showsVerticalScrollIndicator={false}>
+          <ScrollView style={mapStyles.routesList} showsVerticalScrollIndicator={false}>
             {getDisplayedRoutes().map((route) => (
               <RouteOption
                 key={route.id}
@@ -710,18 +699,24 @@ const Maps = () => {
             ))}
           </ScrollView>
 
-          <View style={styles.routeButtonsContainer}>
-            <TouchableOpacity style={styles.startNavigationButton} onPress={startNavigation}>
-              <Text style={styles.startNavigationButtonText}>Start Trip</Text>
+          <View style={mapStyles.routeButtonsContainer}>
+            <TouchableOpacity style={mapStyles.startNavigationButton} onPress={startNavigation}>
+              <Text style={mapStyles.startNavigationButtonText}>Start Trip</Text>
             </TouchableOpacity>
 
             {routes.length > 1 && (
               <TouchableOpacity
-                style={[styles.alternateRouteButton, showingAlternateRoutes && styles.alternateRouteButtonActive]}
+                style={[
+                  mapStyles.alternateRouteButton, 
+                  showingAlternateRoutes && mapStyles.alternateRouteButtonActive
+                ]}
                 onPress={handleAlternateRoutes}
               >
                 <Text
-                  style={[styles.alternateRouteButtonText, showingAlternateRoutes && styles.alternateRouteButtonTextActive]}
+                  style={[
+                    mapStyles.alternateRouteButtonText, 
+                    showingAlternateRoutes && mapStyles.alternateRouteButtonTextActive
+                  ]}
                 >
                   {showingAlternateRoutes ? 'Hide Alternatives' : 'Show Alternate Routes'}
                 </Text>
@@ -733,40 +728,44 @@ const Maps = () => {
 
       {/* Navigation Interface */}
       {navigationPhase === 'navigating' && (
-        <SafeAreaView style={[styles.navigationContainer, { paddingTop: insets.top }]}>
-          <View style={styles.navigationHeader}>
-            <View style={styles.navigationInfo}>
-              <Text style={styles.navigationTime}>{routes[selectedRoute]?.durationWithTraffic} min</Text>
-              <Text style={styles.navigationDistance}>{routes[selectedRoute]?.distance} km</Text>
+        <SafeAreaWrapper 
+          style={mapStyles.navigationContainer}
+          edges={['top']}
+          backgroundColor={theme.colors.white}
+        >
+          <View style={mapStyles.navigationHeader}>
+            <View style={mapStyles.navigationInfo}>
+              <Text style={mapStyles.navigationTime}>{routes[selectedRoute]?.durationWithTraffic} min</Text>
+              <Text style={mapStyles.navigationDistance}>{routes[selectedRoute]?.distance} km</Text>
             </View>
-            <TouchableOpacity onPress={completeTrip} style={styles.endTripButton}>
-              <Text style={styles.endTripButtonText}>End Trip</Text>
+            <TouchableOpacity onPress={completeTrip} style={mapStyles.endTripButton}>
+              <Text style={mapStyles.endTripButtonText}>End Trip</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </SafeAreaWrapper>
       )}
 
       {/* Trip Completion Interface */}
       {navigationPhase === 'completed' && (
-        <View style={[styles.completionContainer, { paddingBottom: insets.bottom }]}>
-          <SafeAreaView edges={['top']}>
-            <View style={styles.completionContent}>
-              <View style={styles.completionIcon}>
-                <Ionicons name="checkmark-circle" size={60} color="#34C759" />
+        <View style={[mapStyles.completionContainer, { paddingBottom: theme.layout.safeArea.bottom }]}>
+          <SafeAreaWrapper edges={['top']} backgroundColor="transparent">
+            <View style={mapStyles.completionContent}>
+              <View style={mapStyles.completionIcon}>
+                <Ionicons name="checkmark-circle" size={60} color={theme.colors.success[500]} />
               </View>
-              <Text style={styles.completionTitle}>Trip Completed!</Text>
-              <Text style={styles.completionSubtitle}>You have arrived at your destination</Text>
+              <Text style={mapStyles.completionTitle}>Trip Completed!</Text>
+              <Text style={mapStyles.completionSubtitle}>You have arrived at your destination</Text>
 
-              <View style={styles.tripSummary}>
-                <Text style={styles.tripSummaryText}>Distance: {routes[selectedRoute]?.distance} km</Text>
-                <Text style={styles.tripSummaryText}>Time: {routes[selectedRoute]?.durationWithTraffic} min</Text>
+              <View style={mapStyles.tripSummary}>
+                <Text style={mapStyles.tripSummaryText}>Distance: {routes[selectedRoute]?.distance} km</Text>
+                <Text style={mapStyles.tripSummaryText}>Time: {routes[selectedRoute]?.durationWithTraffic} min</Text>
               </View>
 
-              <TouchableOpacity style={styles.doneButton} onPress={resetToSearch}>
-                <Text style={styles.doneButtonText}>Done</Text>
+              <TouchableOpacity style={mapStyles.doneButton} onPress={resetToSearch}>
+                <Text style={mapStyles.doneButtonText}>Done</Text>
               </TouchableOpacity>
             </View>
-          </SafeAreaView>
+          </SafeAreaWrapper>
         </View>
       )}
 
@@ -774,454 +773,23 @@ const Maps = () => {
       {(navigationPhase === 'route-selection' || navigationPhase === 'search') && (
         <TouchableOpacity
           style={[
-            styles.locationButton,
-            navigationPhase === 'route-selection' && styles.locationButtonRouteSelection,
+            mapStyles.locationButton,
+            navigationPhase === 'route-selection' && mapStyles.locationButtonRouteSelection,
           ]}
           onPress={centerOnUser}
         >
-          <Ionicons name="locate" size={24} color="#007AFF" />
+          <Ionicons name="locate" size={24} color={theme.colors.primary[500]} />
         </TouchableOpacity>
       )}
 
       {/* Loading Overlay */}
       {loading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#007AFF" />
+        <View style={mapStyles.loadingOverlay}>
+          <ActivityIndicator size="large" color={theme.colors.primary[500]} />
         </View>
       )}
-    </SafeAreaView>
+    </SafeAreaWrapper>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  map: {
-    flex: 1,
-  },
-
-  // Markers (unchanged)
-  currentLocationMarker: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0, 122, 255, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  currentLocationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#007AFF',
-  },
-  destinationMarker: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Search Interface
-  searchContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: "#F1F1F1",
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
-    marginBottom: 10,
-  },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  clearButton: {
-    padding: 5,
-  },
-  searchResultsContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    maxHeight: 200,
-    marginBottom: 20,
-  },
-  searchResultsList: {
-    maxHeight: 200,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  searchResultTextContainer: {
-    marginLeft: 15,
-    flex: 1,
-  },
-  searchResultTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  searchResultSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  loader: {
-    padding: 20,
-  },
-  actionButtonsContainer: {
-    gap: 10,
-  },
-  currentLocationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    borderWidth: 1,
-    borderColor: "#F1F1F1",
-    padding: 15,
-    borderRadius: 25,
-  },
-  currentLocationText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#007AFF',
-  },
-  startTripButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-  },
-  startTripButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  // Route Selection Interface
-  routeSelectionContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: height * 0.7,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  routeSelectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    paddingTop: 20,
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  routesList: {
-    paddingHorizontal: 20,
-    maxHeight: 300,
-  },
-  routeOption: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedRouteOption: {
-    borderColor: '#007AFF',
-    backgroundColor: '#f0f8ff',
-  },
-  routeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  routeTypeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  routeColorIndicator: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    marginRight: 10,
-  },
-  routeType: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  fastestBadge: {
-    backgroundColor: '#34C759',
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  routeTime: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  routeDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  routeDistance: {
-    fontSize: 14,
-    color: '#666',
-  },
-  routeFeatures: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  featureBadge: {
-    backgroundColor: '#e8f5e8',
-    color: '#34C759',
-    fontSize: 12,
-    fontWeight: '500',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  trafficIndicator: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  trafficText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  normalTime: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  routeButtonsContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    gap: 10,
-  },
-  startNavigationButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-  },
-  startNavigationButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  alternateRouteButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 12,
-    borderRadius: 20,
-    alignItems: 'center',
-  },
-  alternateRouteButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  alternateRouteButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  alternateRouteButtonTextActive: {
-    color: 'white',
-  },
-
-  // Navigation Interface
-  navigationContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 15,
-    borderBottomRightRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  navigationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  navigationInfo: {
-    flex: 1,
-  },
-  navigationTime: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  navigationDistance: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 2,
-  },
-  endTripButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  endTripButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // Trip Completion Interface
-  completionContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  completionContent: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 30,
-    paddingBottom: 40,
-  },
-  completionIcon: {
-    marginBottom: 20,
-  },
-  completionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  completionSubtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  tripSummary: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 20,
-    width: '100%',
-    marginBottom: 30,
-  },
-  tripSummaryText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  doneButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 25,
-    width: '100%',
-    alignItems: 'center',
-  },
-  doneButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  // Location Button
-  locationButton: {
-    position: 'absolute',
-    right: 20,
-    bottom: 100,
-    backgroundColor: 'white',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  locationButtonRouteSelection: {
-    bottom: 420,
-  },
-
-  // Loading Overlay
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
 
 export default Maps;
