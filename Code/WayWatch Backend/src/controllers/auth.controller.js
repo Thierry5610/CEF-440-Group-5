@@ -70,16 +70,17 @@ export const resendOtp = async (req, res) => {
 // src/controllers/auth.controller.js
 
 // ... (previous imports and code)
+// src/controllers/auth.controller.js
+
+// ... (previous imports and code)
 
 export const verifyOtp = async (req, res) => {
   const method = req.method;
-  let { email, otp } = method === 'GET' ? req.query : req.body; // Use 'let' to allow reassigning 'otp'
+  let { email, otp } = method === 'GET' ? req.query : req.body;
 
-  // --- ADD THIS LINE TO TRIM WHITESPACE ---
   if (otp) {
-      otp = otp.toString().trim(); // Ensure it's a string then remove leading/trailing whitespace
+      otp = otp.toString().trim();
   }
-  // ----------------------------------------
 
   if (!email || !otp) {
     return res.status(400).json({ message: 'Email and OTP are required' });
@@ -94,14 +95,24 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: 'Already verified' });
     }
 
-    // --- Keep your debugging logs for a moment to confirm the fix ---
-    console.log('--- OTP Verification Debug ---');
-    console.log('Verifying OTP for email:', email);
-    console.log('OTP received in request (after trim):', otp); // Log the trimmed value
     const storedOtp = await otpStore.get(email);
+
+    // --- ADDED DETAILED DEBUGGING HERE ---
+    console.log('--- OTP Verification Deep Debug ---');
+    console.log('Verifying OTP for email:', email);
+    console.log('OTP received in request (after trim):', otp);
+    console.log('  Received OTP Length:', otp ? otp.length : 'N/A');
+    console.log('  Received OTP Char Codes:', otp ? Array.from(otp).map(char => char.charCodeAt(0)) : 'N/A');
+
     console.log('OTP retrieved from Redis (storedOtp):', storedOtp);
-    console.log('Are received and stored OTPs equal?', storedOtp === otp);
-    console.log('--- End OTP Verification Debug ---');
+    console.log('  Stored OTP Length:', storedOtp ? storedOtp.length : 'N/A');
+    console.log('  Stored OTP Char Codes:', storedOtp ? Array.from(storedOtp).map(char => char.charCodeAt(0)) : 'N/A');
+
+    console.log('Are received and stored OTPs equal (===)?', storedOtp === otp);
+    // You can also try a looser comparison just for kicks, but fix the root cause
+    // console.log('Are received and stored OTPs equal (==)?', storedOtp == otp);
+    console.log('--- End OTP Verification Deep Debug ---');
+    // ----------------------------------------
 
     if (!storedOtp || storedOtp !== otp) {
       if (method === 'GET') return res.redirect(`${process.env.CLIENT_URL}/invalid-otp`);
@@ -122,6 +133,8 @@ export const verifyOtp = async (req, res) => {
     return res.status(500).json({ message: 'Verification failed', error: err.message });
   }
 };
+
+// ... (rest of your controller code)
 
 // ... (rest of your controller code)
 
